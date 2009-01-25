@@ -31,7 +31,7 @@
     }
     return self;
 }
-- (BOOL)ccTouchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+- (BOOL)ccTouchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
     MenuScene * ms = [MenuScene node];
     [[Director sharedDirector] runScene:ms];
     return kEventHandled;
