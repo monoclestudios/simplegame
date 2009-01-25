@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -52,4 +46,19 @@
 //! * 1 means that the action is over
 -(void) update: (ccTime) time;
 
+@end
+
+
+@class IntervalAction;
+/** Repeats an action for ever.
+ * To repeat the an action for a limited number of times use the Repeat action.
+ */
+@interface RepeatForever : Action <NSCopying>
+{
+	IntervalAction *other;
+}
+/** creates the action */
++(id) actionWithAction: (IntervalAction*) action;
+/** initializes the action */
+-(id) initWithAction: (IntervalAction*) action;
 @end

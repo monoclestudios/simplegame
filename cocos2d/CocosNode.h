@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -29,11 +23,6 @@
 enum {
 	kCocosNodeTagInvalid = -1,
 };
-
-// XXX: children anchor is not working
-// but since cocos2d-iphone uses a different way to call it's children
-// it is not necesary to have children anchor
-//#define USING_CHILDREN_ANCHOR 1
 
 @class Camera;
 
@@ -54,73 +43,95 @@ enum {
 */ 
 @interface CocosNode : NSObject {
 	
-	/// rotation angle
+	// rotation angle
 	float rotation;	
 	
-	/// scale factor
+	// scale factor
 	float scale;
 	
-	/// position of the node
+	// scale X factor
+	float scaleX;
+	
+	// scale Y factor
+	float scaleY;
+	
+	// position of the node
 	cpVect position;
 
-	/// is visible
+	// parallax X factor
+	float parallaxRatioX;
+	
+	// parallax Y factor
+	float parallaxRatioY;
+
+	// is visible
 	BOOL visible;
 	
-	/// a Camera
+	// a Camera
 	Camera *camera;
 	
-	/// z-order value
+	// z-order value
 	int zOrder;
 
-	/// If YES the transformtions will be relative to (-transform.x, -transform.y).
-	/// Sprites, Labels and any other "small" object uses it.
-	/// Scenes, Layers and other "whole screen" object don't use it.
+	// If YES the transformtions will be relative to (-transform.x, -transform.y).
+	// Sprites, Labels and any other "small" object uses it.
+	// Scenes, Layers and other "whole screen" object don't use it.
 	BOOL relativeTransformAnchor;
 
-	/// transformation anchor point
+	// transformation anchor point
 	cpVect transformAnchor;
-	
-	/// where are the children placed (anchor)
-//	cpVect childrenAnchor;
-	
-	/// array of children
+		
+	// array of children
 	NSMutableArray *children;
-	
-	/// dictionary of child name -> child
-	NSMutableDictionary *childrenNames;
-	
-	/// is running
+		
+	// is running
 	BOOL isRunning;
 	
-	/// weakref to parent
+	// weakref to parent
 	CocosNode *parent;
 	
-	/// a tag. any number you want to assign to the node
+	// a tag. any number you want to assign to the node
 	int tag;
 	
 	// actions
 	NSMutableArray *actions;
 	NSMutableArray *actionsToRemove;
 	NSMutableArray *actionsToAdd;
-
 	
 	// scheduled selectors
 	NSMutableDictionary *scheduledSelectors;
 }
 
+/** The z order of the node relative to it's "brothers": children of the same parent */
 @property(readwrite,assign) int zOrder;
+/** The rotation (angle) of the node in degrees. 0 is the default rotation angle */
 @property(readwrite,assign) float rotation;
-@property(readwrite,assign) float scale;
+/** The scale factor of the node. 1.0 is the default scale factor */
+@property(readwrite,assign) float scale, scaleX, scaleY;
+/** The parallax ratio of the node. 1.0 is the default ratio */
+@property(readwrite,assign) float parallaxRatio;
+/** The X parallax ratio of the node. 1.0 is the default ratio */
+@property(readwrite,assign) float parallaxRatioY;
+/** The Y parallax ratio of the node. 1.0 is the default ratio */
+@property(readwrite,assign) float parallaxRatioX;
+/** Position (x,y) of the node in OpenGL coordinates. (0,0) is the left-bottom corner */
 @property(readwrite,assign) cpVect position;
+/** A Camera object that lets you move the node using camera coordinates.
+ * If you use the Camera then position, scale & rotation won't be used */
 @property(readwrite,assign) Camera* camera;
+/** Whether of not the node is visible. Default is YES */
 @property(readwrite,assign) BOOL visible;
+/** The transformation anchor point. For Sprite and Label the transform anchor point is (width/2, height/2) */
 @property(readwrite,assign) cpVect transformAnchor;
+/** A weak reference to the parent */
 @property(readwrite,assign) CocosNode* parent;
+/** If YES the transformtions will be relative to (-transform.x, -transform.y).
+ * Sprites, Labels and any other sizeble object use it.
+ * Scenes, Layers and other "whole screen" object don't use it.
+ */
 @property(readwrite,assign) BOOL relativeTransformAnchor;
+/** A tag used to identify the node easily */
 @property(readwrite,assign) int tag;
-#if USING_CHILDREN_ANCHOR
-@property(readwrite,assign) cpVect childrenAnchor;
-#endif
 
 // initializators
 //! creates a node
@@ -147,33 +158,39 @@ enum {
  @return returns self
  */
 -(id) add: (CocosNode*)node z:(int)z;
-/** Adds a child to the container with z order and name
- @return returns self
- @deprecated Use add:z:tag instead
- */
--(id) add: (CocosNode*)node z:(int)z name:(NSString*)name;
 /** Adds a child to the container with z order and tag
  @return returns self
  */
 -(id) add: (CocosNode*)node z:(int)z tag:(int)tag;
+/** Adds a child to the container with a z-order and a parallax ratio
+ @return returns self
+ */
+-(id) add: (CocosNode*)node z:(int)z parallaxRatio:(cpVect)c;
 /** Removes a child from the container
- If you have added a 'named' child, you MUST remove it using removeByName instead
+ * @warning It DOESN'T stop all running actions from the removed object and unschedules all scheduled selectors 
  */
 -(void) remove: (CocosNode*)node;
-/** Removes a child from the container given its name
- * @deprecated Use removeByTag instead
+/** Removes a child from the container given its tag
+ * @warning It DOESN'T stop all running actions from the removed object and unschedules all scheduled selectors 
  */
--(void) removeByName: (NSString*)name;
-/** Removes all children from the container
+-(void) removeByTag:(int) tag;
+/** Removes all children from the container.
+ * @warning It DOESN'T stop all running actions from the removed objecst and unschedules all scheduled selectors 
  */
 -(void) removeAll;
-/** Gets a child from the container given its name 
- * @deprecated Use getByTag instead
+/** Removes a child from the container by reference and stops all running actions and scheduled functions
  */
--(CocosNode*) get: (NSString*) name;
-/** Removes a child from the container given its tag */
--(void) removeByTag:(int) tag;
-/** Gets a child from the container given its tag */
+-(void) removeAndStop: (CocosNode*)node;
+/** Removes a child from the container by tag and stops all running actions and scheduled functions
+ */
+-(void) removeAndStopByTag:(int) tag;
+/** Removes all children from the container.
+ * It stops all running actions from the removed objects and unschedules all scheduled selectors
+ */
+-(void) removeAndStopAll;
+/** Gets a child from the container given its tag
+ * @return returns a CocosNode object
+ */
 -(CocosNode*) getByTag:(int) tag;
 
 
@@ -183,6 +200,10 @@ enum {
 -(void) draw;
 /** recursive method that visit its children and draw them */
 -(void) visit;
+
+
+// transformations
+
 /** performs opengl view-matrix transformation based on position, scale, rotation and other attributes. */
 -(void) transform;
 
@@ -195,6 +216,12 @@ enum {
 -(void) stopAllActions;
 /** Removes one action from the running action list */
 -(void) stopAction: (Action*) action;
+/** Returns the numbers of actions that are running plus the ones that are schedule to run (actions in actionsToAdd and actions arrays). 
+ * Composable actions are counted as 1 action. Example:
+ *    If you are running 1 Sequence of 7 actions, it will return 1.
+ *    If you are running 7 Sequences of 2 actions, it will return 7.
+ */
+-(int) numberOfRunningActions;
 
 
 // timers

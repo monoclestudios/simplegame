@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -95,7 +89,6 @@ static TextureMgr *sharedTextureMgr;
 	NSAssert(fileimage != nil, @"TextureMgr: fileimage MUST not be nill");
 	NSAssert( bpp==2 || bpp==4, @"TextureMgr: bpp must be either 2 or 4");
 	
-#if !TARGET_IPHONE_SIMULATOR
 	Texture2D * tex;
 	
 	if( (tex=[textures objectForKey: fileimage] ) ) {
@@ -114,14 +107,24 @@ static TextureMgr *sharedTextureMgr;
 	}
 
 	return [tex autorelease];
-
-#else // SIMULATOR
-	// append .png
-	NSString *png = [NSString stringWithFormat:@"%@.png", fileimage];
-	return [self addImage:png];
-#endif
 }
 
+-(Texture2D*) addCGImage: (CGImageRef) image
+{
+	NSAssert(image != nil, @"TextureMgr: image MUST not be nill");
+	
+	Texture2D * tex;
+	NSString *key = [NSString stringWithFormat:@"%08X",(unsigned long)image];
+	
+	if( (tex=[textures objectForKey: key] ) ) {
+		return tex;
+	}
+	
+	tex = [[Texture2D alloc] initWithImage: [UIImage imageWithCGImage:image]];
+	[textures setObject: tex forKey:key];
+	
+	return [tex autorelease];
+}
 
 -(void) removeAllTextures
 {
@@ -131,8 +134,10 @@ static TextureMgr *sharedTextureMgr;
 -(void) removeTexture: (Texture2D*) tex
 {
 	NSAssert(tex != nil, @"TextureMgr: tex MUST not be nill");
-
-	[textures removeObjectForKey:tex];
+	
+	NSArray *keys = [textures allKeysForObject:tex];
+	
+	for( int i = 0; i < [keys count]; i++ )
+		[textures removeObjectForKey:[keys objectAtIndex:i]];
 }
-
 @end

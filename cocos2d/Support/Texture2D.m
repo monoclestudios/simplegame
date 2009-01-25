@@ -83,6 +83,11 @@ Copyright (C) 2008 Apple Inc. All Rights Reserved.
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &saveName);
 		glBindTexture(GL_TEXTURE_2D, _name);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+		
 		switch(pixelFormat) {
 			
 			case kTexture2DPixelFormat_RGBA8888:
@@ -112,6 +117,9 @@ Copyright (C) 2008 Apple Inc. All Rights Reserved.
 
 - (void) dealloc
 {
+#if DEBUG
+	NSLog(@"deallocing: %@", self);
+#endif
 	if(_name)
 		glDeleteTextures(1, &_name);
 	
@@ -144,12 +152,10 @@ Copyright (C) 2008 Apple Inc. All Rights Reserved.
 	CGSize					imageSize;
 	Texture2DPixelFormat    pixelFormat;
 	CGImageRef				image;
-	UIImageOrientation		orientation;
 	BOOL					sizeToFit = NO;
 	
 	
 	image = [uiImage CGImage];
-	orientation = [uiImage imageOrientation]; 
 	
 	if(image == NULL) {
 		[self release];
@@ -160,8 +166,9 @@ Copyright (C) 2008 Apple Inc. All Rights Reserved.
 
 	info = CGImageGetAlphaInfo(image);
 	hasAlpha = ((info == kCGImageAlphaPremultipliedLast) || (info == kCGImageAlphaPremultipliedFirst) || (info == kCGImageAlphaLast) || (info == kCGImageAlphaFirst) ? YES : NO);
+	size_t bpp = CGImageGetBitsPerComponent(image);
 	if(CGImageGetColorSpace(image)) {
-		if(hasAlpha)
+		if(hasAlpha || bpp >= 8)
 			pixelFormat = kTexture2DPixelFormat_RGBA8888;
 		else
 			pixelFormat = kTexture2DPixelFormat_RGB565;
@@ -357,6 +364,10 @@ Copyright (C) 2008 Apple Inc. All Rights Reserved.
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &saveName);
 		glBindTexture(GL_TEXTURE_2D, _name);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 		
 		GLenum format;
 		GLsizei size = length * length * bpp / 8;

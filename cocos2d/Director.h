@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -27,6 +21,11 @@
 
 // cocos2d related
 #import "Scene.h"
+
+enum {
+	kEventHandled = YES,
+	kEventIgnored = NO,
+};
 
 // Landscape is right or left ?
 #define LANDSCAPE_LEFT 1
@@ -54,10 +53,10 @@ and when to execute the Scenes
 	NSTimeInterval animationInterval;
 	NSTimeInterval oldAnimationInterval;
 
-	/** landscape mode ? */
+	/* landscape mode ? */
 	BOOL landscape;
 	
-	/** display FPS ? */
+	/* display FPS ? */
 	BOOL displayFPS;
 	int frames;
 	ccTime accumDt;
@@ -66,36 +65,41 @@ and when to execute the Scenes
 	LabelAtlas *FPSLabel;
 #endif
 	
-	/** is the running scene paused */
+	/* is the running scene paused */
 	BOOL paused;
 	
-	/** running scene */
+	/* running scene */
 	Scene *runningScene;
 	
-	/** will be the next 'runningScene' in the next frame */
+	/* will be the next 'runningScene' in the next frame */
 	Scene *nextScene;
 	
-	/** event handler */
+	/* event handler */
 	NSMutableArray	*eventHandlers;
 
-	/** scheduled scenes */
+	/* scheduled scenes */
 	NSMutableArray *scenes;
 	
-	/** last time the main loop was updated */
+	/* last time the main loop was updated */
 	struct timeval lastUpdate;
-	/** delta time since last tick to main loop */
+	/* delta time since last tick to main loop */
 	ccTime dt;
-	/** whether or not the next delta time will be zero */
+	/* whether or not the next delta time will be zero */
 	 BOOL nextDeltaTimeZero;
 	
-	/** are touch events enabled. Default is YES */
+	/* are touch events enabled. Default is YES */
 	BOOL eventsEnabled;
 }
 
+/** The current running Scene. Director can only run one Scene at the time */
 @property (readonly, assign) Scene* runningScene;
+/** The FPS value */
 @property (readwrite, assign) NSTimeInterval animationInterval;
+/** The UIKit window. Use it to embed UIKit object within cocos2d */
 @property (readwrite,assign) UIWindow* window;
+/** Whether or not to display the FPS on the bottom-left corner */
 @property (readwrite, assign) BOOL displayFPS;
+/** Whether or not to propagate the touch events to the running Scene. Default YES */
 @property (readwrite, assign) BOOL eventsEnabled;
 
 /** returns a shared instance of the director */

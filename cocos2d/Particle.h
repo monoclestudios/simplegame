@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -43,64 +37,64 @@ typedef struct sParticle
 {
 	int id;
 	
-	/// is the particle system active ?
+	// is the particle system active ?
 	BOOL active;
-	/// duration in seconds of the system. -1 is infinity
+	// duration in seconds of the system. -1 is infinity
 	float duration;
-	/// time elapsed since the start of the system (in seconds)
+	// time elapsed since the start of the system (in seconds)
 	float elapsed;
 	
 	/// Gravity of the particles
 	cpVect gravity;
 
-	/// position is from "superclass" CocosNode
-	/// Position variance
+	// position is from "superclass" CocosNode
+	// Position variance
 	cpVect posVar;
 	
-	/// The angle (direction) of the particles measured in degrees
+	// The angle (direction) of the particles measured in degrees
 	float angle;
-	/// Angle variance measured in degrees;
+	// Angle variance measured in degrees;
 	float angleVar;
 	
-	/// The speed the particles will have.
+	// The speed the particles will have.
 	float speed;
-	/// The speed variance
+	// The speed variance
 	float speedVar;
 	
-	/// Tangential acceleration
+	// Tangential acceleration
 	float tangentialAccel;
-	/// Tangential acceleration variance
+	// Tangential acceleration variance
 	float tangentialAccelVar;
 
-	/// Radial acceleration
+	// Radial acceleration
 	float radialAccel;
-	/// Radial acceleration variance
+	// Radial acceleration variance
 	float radialAccelVar;
 	
-	/// Size of the particles
+	// Size of the particles
 	float size;
-	/// Size variance
+	// Size variance
 	float sizeVar;
 	
-	/// How many seconds will the particle live
+	// How many seconds will the particle live
 	float life;
-	/// Life variance
+	// Life variance
 	float lifeVar;
 	
-	/// Start color of the particles
+	// Start color of the particles
 	ccColorF startColor;
-	/// Start color variance
+	// Start color variance
 	ccColorF startColorVar;
-	/// End color of the particles
+	// End color of the particles
 	ccColorF endColor;
-	/// End color variance
+	// End color variance
 	ccColorF endColorVar;
 	
-	/// Array of particles
+	// Array of particles
 	Particle *particles;
-	/// Maximum particles
+	// Maximum particles
 	int totalParticles;
-	/// Count of particles
+	// Count of active particles
 	int particleCount;
 	
 	// additive color or blend
@@ -108,39 +102,71 @@ typedef struct sParticle
 	// color modulate
 	BOOL colorModulate;
 	
-	/// How many particles can be emitted per second
+	// How many particles can be emitted per second
 	float emissionRate;
 	float emitCounter;
 	
-	/// Texture of the particles
+	// Texture of the particles
 	Texture2D *texture;
 	
-	/// Array of (x,y,size) 
+	// Array of (x,y,size) 
 	ccPointSprite *vertices;
-	/// Array of colors
+	// Array of colors
 	ccColorF	*colors;
-	/// vertices buffer id
+	// vertices buffer id
 	GLuint	verticesID;
-	/// colors buffer id
+	// colors buffer id
 	GLuint	colorsID;
 	
-	///  particle idx
+	//  particle idx
 	int particleIdx;
 }
 
-@property (readonly)	BOOL active;
+/** Is the emitter active */
+@property (readonly) BOOL active;
+/** Quantity of particles that are being simulated at the moment */
+@property (readonly) int	particleCount;
+/** Gravity value */
 @property (readwrite,assign) cpVect gravity;
+/** How many seconds the emitter wil run. -1 means 'forever' */
 @property (readwrite,assign) float duration;
+/** Position variance of the emitter */
 @property (readwrite,assign) cpVect posVar;
-@property (readwrite,assign) float life, lifeVar;
-@property (readwrite,assign) float angle, angleVar;
-@property (readwrite,assign) float speed, speedVar;
-@property (readwrite,assign) float tangentialAccel, tangentialAccelVar;
-@property (readwrite,assign) float radialAccel, radialAccelVar;
-@property (readwrite,assign) float size, sizeVar;
-@property (readwrite,assign) ccColorF startColor, startColorVar;
-@property (readwrite,assign) ccColorF endColor, endColorVar;
+/** life, and life variation of each particle */
+@property (readwrite,assign) float life;
+/** life variance of each particle */
+@property (readwrite,assign) float lifeVar;
+/** angle and angle variation of each particle */
+@property (readwrite,assign) float angle;
+/** angle variance of each particle */
+@property (readwrite,assign) float angleVar;
+/** speed of each particle */
+@property (readwrite,assign) float speed;
+/** speed variance of each particle */
+@property (readwrite,assign) float speedVar;
+/** tangential acceleration of each particle */
+@property (readwrite,assign) float tangentialAccel;
+/** tangential acceleration variance of each particle */
+@property (readwrite,assign) float tangentialAccelVar;
+/** radial acceleration of each particle */
+@property (readwrite,assign) float radialAccel;
+/** radial acceleration variance of each particle */
+@property (readwrite,assign) float radialAccelVar;
+/** size in pixels of each particle */
+@property (readwrite,assign) float size;
+/** size variance in pixels of each particle */
+@property (readwrite,assign) float sizeVar;
+/** start color of each particle */
+@property (readwrite,assign) ccColorF startColor;
+/** start color variance of each particle */
+@property (readwrite,assign) ccColorF startColorVar;
+/** end color and end color variation of each particle */
+@property (readwrite,assign) ccColorF endColor;
+/** end color variance of each particle */
+@property (readwrite,assign) ccColorF endColorVar;
+/** emission rate of the particles */
 @property (readwrite,assign) float emissionRate;
+/** maximum particles of the system */
 @property (readwrite,assign) int totalParticles;
 
 //! Initializes a system with a fixed number of particles

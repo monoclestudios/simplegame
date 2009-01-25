@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -30,16 +24,17 @@
 -(void) activateTimers;
 // deactivate all scheduled timers
 -(void) deactivateTimers;
+// lazy allocs
+-(void) actionAlloc;
+-(void) childrenAlloc;
+-(void) timerAlloc;
 @end
 
 @implementation CocosNode
 
-@synthesize rotation, scale, position;
+@synthesize rotation, scaleX, scaleY, position, parallaxRatioX, parallaxRatioY;
 @synthesize visible;
 @synthesize transformAnchor, relativeTransformAnchor;
-#if USING_CHILDREN_ANCHOR
-	@synthesize childrenAnchor;
-#endif
 @synthesize parent;
 @synthesize camera;
 @synthesize zOrder;
@@ -60,30 +55,29 @@
 	position = cpvzero;
 	
 	rotation = 0.0f;		// 0 degrees	
-	scale = 1.0f;			// scale factor
+	scaleX = 1.0f;			// scale factor
+	scaleY = 1.0f;
+	parallaxRatioX = 1.0f;
+	parallaxRatioY = 1.0f;
 
 	camera = [[Camera alloc] init];
 	
 	visible = YES;
 
-#if USING_CHILDREN_ANCHOR
-	childrenAnchor = cpvzero;
-#endif
 	transformAnchor = cpvzero;
 	
 	tag = kCocosNodeTagInvalid;
 	
-	// children
-	children = [[NSMutableArray arrayWithCapacity:4] retain];
-	childrenNames = [[NSMutableDictionary dictionaryWithCapacity:4] retain];
+	// children (lazy allocs)
+	children = nil;
 
-	// actions
-	actions = [[NSMutableArray arrayWithCapacity:4] retain];
-	actionsToRemove = [[NSMutableArray arrayWithCapacity:4] retain];
-	actionsToAdd = [[NSMutableArray arrayWithCapacity:4] retain];
+	// actions (lazy allocs)
+	actions = nil;
+	actionsToRemove = nil;
+	actionsToAdd = nil;
 	
-	// scheduled selectors
-	scheduledSelectors = [[NSMutableDictionary dictionaryWithCapacity: 2] retain];
+	// scheduled selectors (lazy allocs)
+	scheduledSelectors = nil;
 	
 	// default.
 	// "whole screen" objects should set it to NO, like Scenes and Layers
@@ -121,7 +115,6 @@
 	// children
 	[children makeObjectsPerformSelector:@selector(cleanup)];
 	[children release];
-	[childrenNames release];
 	
 	// timers
 	[scheduledSelectors release];
@@ -136,40 +129,18 @@
 
 #pragma mark CocosNode Composition
 
-// XXX: deprecated
--(id) add: (CocosNode*) child z:(int)z name:(NSString*)name
-{	
-	NSAssert( child != nil, @"Argument must be non-nil");
-	
-	child.zOrder=z;
-	
-	int index=0;
-	BOOL added = NO;
-	for( CocosNode *a in children ) {
-		if ( a.zOrder > z ) {
-			added = YES;
-			[ children insertObject:child atIndex:index];
-			break;
-		}
-		index++;
-	}
-	if( ! added )
-		[children addObject:child];
-	
-	if( name )
-		[childrenNames setObject:child forKey:name];
-	
-	[child setParent: self];
-	
-	if( isRunning )
-		[child onEnter];
-	return self;
+-(void) childrenAlloc
+{
+	children = [[NSMutableArray arrayWithCapacity:4] retain];
 }
 
 -(id) add: (CocosNode*) child z:(int)z tag:(int) aTag
 {	
 	NSAssert( child != nil, @"Argument must be non-nil");
 	
+	if( ! children )
+		[self childrenAlloc];
+
 	child.zOrder=z;
 	
 	int index=0;
@@ -194,6 +165,14 @@
 	return self;
 }
 
+-(id) add: (CocosNode*) child z:(int)z parallaxRatio:(cpVect)c
+{
+	NSAssert( child != nil, @"Argument must be non-nil");
+	child.parallaxRatioX = c.x;
+	child.parallaxRatioY = c.y;
+	return [self add: child z:z tag:kCocosNodeTagInvalid];
+}
+
 // add a node to the array
 -(id) add: (CocosNode*) child z:(int)z
 {
@@ -216,22 +195,11 @@
 			[c setParent: nil];
 			if( isRunning )
 				[c onExit];
-			
-			[children removeObject: c];
-			
+
+			[children removeObject: c];			
 			break;
 		}
 	}
-}
-
-// XXX: deprecated method. Use removeByTag instead
--(void) removeByName: (NSString*) name
-{
-	NSAssert( name != nil, @"Argument must be non-nil");
-	
-	id child = [childrenNames objectForKey: name];
-	[self remove: child];
-	[childrenNames removeObjectForKey: name];
 }
 
 -(void) removeByTag:(int) aTag
@@ -255,16 +223,57 @@
 		[c setParent: nil];
 		if( isRunning )
 			[c onExit];
-	}	
+	}
+
 	[children removeAllObjects];
-	[childrenNames removeAllObjects];
 }
 
-// XXX: deprecated method. Use getByTag instead
--(CocosNode*) get: (NSString*) name
+-(void) removeAndStop: (CocosNode*)child
 {
-	NSAssert( name != nil, @"Argument must be non-nil");
-	return [childrenNames objectForKey:name];
+	NSAssert( child != nil, @"Argument must be non-nil");
+	
+	for( CocosNode * c in children) {
+		if( [c isEqual: child] ) {
+			[c setParent: nil];
+
+			if( isRunning )
+				[c onExit];
+
+			[c stopAllActions];
+			[c cleanup];
+			[children removeObject: c];
+
+			break;
+		}
+	}
+}
+
+-(void) removeAndStopByTag:(int) aTag
+{
+	NSAssert( aTag != kCocosNodeTagInvalid, @"Invalid tag");
+	
+	CocosNode *toRemove = nil;
+	for( CocosNode *node in children ) {
+		if( node.tag == aTag ) {
+			toRemove = node;
+			break;
+		}
+	}
+	if( toRemove )
+		[self removeAndStop:toRemove];
+	
+}
+
+-(void) removeAndStopAll {
+	for( CocosNode * c in children) {
+		[c setParent: nil];
+		if( isRunning )
+			[c onExit];
+	}
+	
+	[children makeObjectsPerformSelector:@selector(cleanup)]; // issue #74
+	
+	[children removeAllObjects];
 }
 
 -(CocosNode*) getByTag:(int) aTag
@@ -285,40 +294,6 @@
 -(void) draw
 {
 	// override me
-}
-
--(void) transform
-{
-	
-	[camera locate];
-	
-	// transformations
-	if ( relativeTransformAnchor && (transformAnchor.x != 0 || transformAnchor.y != 0 ) )
-		glTranslatef( -transformAnchor.x, -transformAnchor.y, 0);
-	
-	if (transformAnchor.x != 0 || transformAnchor.y != 0 )
-		glTranslatef( position.x + transformAnchor.x, position.y + transformAnchor.y, 0);
-	else if ( position.x !=0 || position.y !=0 )
-		glTranslatef( position.x, position.y, 0 );
-		
-	if (scale != 1.0f)
-		glScalef( scale, scale, 1.0f );
-		
-	if (rotation != 0.0f )
-		glRotatef( -rotation, 0.0f, 0.0f, 1.0f );
-
-	// restore and re-position point
-	if (transformAnchor.x != 0.0f || transformAnchor.y != 0.0f)
-#if USING_CHILDREN_ANCHOR
-	{
-		if ( !( transformAnchor.x == childrenAnchor.x && transformAnchor.y == childrenAnchor.y) )
-			glTranslatef( childrenAnchor.x - transformAnchor.x, childrenAnchor.y - transformAnchor.y, 0);
-	}
-	else if (childrenAnchor.x != 0 || childrenAnchor.y !=0 )
-		glTranslatef( childrenAnchor.x, childrenAnchor.y, 0 );
-#else
-		glTranslatef(-transformAnchor.x, -transformAnchor.y, 0);
-#endif
 }
 
 -(void) visit
@@ -348,6 +323,72 @@
 
 }
 
+#pragma mark CocosNode - Transformations
+
+-(void) transform
+{
+	
+	[camera locate];
+	
+	float parallaxOffsetX = 0;
+	float parallaxOffsetY = 0;
+
+	if( (parallaxRatioX != 1.0f || parallaxRatioY != 1.0) && parent ) {
+		parallaxOffsetX = -parent.position.x + parent.position.x * parallaxRatioX;
+		parallaxOffsetY = -parent.position.y + parent.position.y * parallaxRatioY;		
+	}
+	
+	// transformations
+	if ( relativeTransformAnchor && (transformAnchor.x != 0 || transformAnchor.y != 0 ) )
+		glTranslatef( -transformAnchor.x + parallaxOffsetX, -transformAnchor.y + parallaxOffsetY, 0);
+	
+	if (transformAnchor.x != 0 || transformAnchor.y != 0 )
+		glTranslatef( position.x + transformAnchor.x + parallaxOffsetX, position.y + transformAnchor.y + parallaxOffsetY, 0);
+	else if ( position.x !=0 || position.y !=0 || parallaxOffsetX != 0 || parallaxOffsetY != 0)
+		glTranslatef( position.x + parallaxOffsetX, position.y + parallaxOffsetY, 0 );
+	
+	if (scaleX != 1.0f || scaleY != 1.0f)
+		glScalef( scaleX, scaleY, 1.0f );
+	
+	if (rotation != 0.0f )
+		glRotatef( -rotation, 0.0f, 0.0f, 1.0f );
+	
+	// restore and re-position point
+	if (transformAnchor.x != 0.0f || transformAnchor.y != 0.0f)
+		glTranslatef(-transformAnchor.x + parallaxOffsetX, -transformAnchor.y + parallaxOffsetY, 0);
+}
+
+-(float) scale
+{
+	if( scaleX == scaleY)
+		return scaleX;
+	else
+		[NSException raise:@"CocosNode scale:" format:@"scaleX is different from scaleY"];
+	
+	return 0;
+}
+
+-(void) setScale:(float) s
+{
+	scaleX = scaleY = s;
+}
+
+-(float) parallaxRatio
+{
+	if( parallaxRatioX == parallaxRatioY)
+		return parallaxRatioX;
+	else
+		[NSException raise:@"CocosNode parallaxRatio:" format:@"parallaxRatioX is different from parallaxRatioY"];
+	
+	return 0;
+}
+
+-(void) setParallaxRatio:(float) p
+{
+	parallaxRatioX = parallaxRatioY = p;
+}
+
+
 #pragma mark CocosNode SceneManagement
 
 -(void) onEnter
@@ -374,12 +415,24 @@
 
 #pragma mark CocosNode Actions
 
+-(void) actionAlloc
+{
+	// actions
+	actions = [[NSMutableArray arrayWithCapacity:4] retain];
+	actionsToRemove = [[NSMutableArray arrayWithCapacity:4] retain];
+	actionsToAdd = [[NSMutableArray arrayWithCapacity:4] retain];
+}
+
 -(Action*) do: (Action*) action
 {
 	NSAssert( action != nil, @"Argument must be non-nil");
 
 	action.target = self;
 	[action start];
+
+	// lazy alloc
+	if( !actionsToAdd )
+		[self actionAlloc];
 
 	[actionsToAdd addObject: action];
 	[self schedule: @selector(step_:)];
@@ -404,10 +457,16 @@
 		// do nothing
 	} else if( [actionsToAdd containsObject:action] ) {
 		[actionsToAdd removeObject:action];
-	} else if( [actions containsObject:actions] ) {
+	} else if( [actions containsObject:action] ) {
 		[actionsToRemove addObject:action];
 	}
 }
+
+-(int) numberOfRunningActions
+{
+	return [actionsToAdd count]+[actions count];
+}
+
 
 -(void) step_: (ccTime) dt
 {
@@ -421,7 +480,7 @@
 		[actions addObject: action];
 	[actionsToAdd removeAllObjects];
 		
-	// unschedule if it is no longer necesary
+	// unschedule if it is no longer necessary
 	if ( [actions count] == 0 ) {
 		[self unschedule: @selector(step_:)];
 		return;
@@ -439,6 +498,11 @@
 
 #pragma mark CocosNode Timers 
 
+-(void) timerAlloc
+{
+	scheduledSelectors = [[NSMutableDictionary dictionaryWithCapacity: 2] retain];
+}
+
 -(void) schedule: (SEL) selector
 {
 	[self schedule:selector interval:0];
@@ -449,9 +513,12 @@
 	NSAssert( selector != nil, @"Argument must be non-nil");
 	NSAssert( interval >=0, @"Arguemnt must be positive");
 	
+	if( !scheduledSelectors )
+		[self timerAlloc];
+
 	if( [scheduledSelectors objectForKey: NSStringFromSelector(selector) ] ) {
 #if DEBUG
-		NSLog(@"CocosNode.schedule: Selector already scheduled");
+		NSLog(@"CocosNode.schedule: Selector already scheduled: %@",NSStringFromSelector(selector) );
 #endif
 		return;
 	}
@@ -461,7 +528,7 @@
 	if( isRunning )
 		[[Scheduler sharedScheduler] scheduleTimer:timer];
 	
-	[scheduledSelectors setObject: timer forKey: NSStringFromSelector(selector) ];
+	[scheduledSelectors setObject:timer forKey:NSStringFromSelector(selector) ];
 }
 
 -(void) unschedule: (SEL) selector
@@ -472,12 +539,10 @@
 	
 	if( ! (timer = [scheduledSelectors objectForKey: NSStringFromSelector(selector)] ) )
 	{
-		NSLog(@"selector not scheduled");
-		NSException* myException = [NSException
-									exceptionWithName:@"SelectorNotScheduled"
-									reason:@"Selector not scheduled"
-									userInfo:nil];
-		@throw myException;
+#if DEBUG
+		NSLog(@"CocosNode.unschedule: Selector not scheduled: %@",NSStringFromSelector(selector) );
+#endif		
+		return;
 	}
 
 	[scheduledSelectors removeObjectForKey: NSStringFromSelector(selector) ];

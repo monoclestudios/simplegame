@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -51,6 +45,12 @@
  */
 -(Texture2D*) addPVRTCImage: (NSString*) fileimage bpp:(int)bpp hasAlpha:(BOOL)alpha width:(int)w;
 
+/** Returns a Texture2D object given an CGImageRef image
+ * If the image was not previously loaded, it will create a new Texture2D
+ *  object and it will return it.
+ * Otherwise it will return a reference of a previosly loaded image
+ */
+-(Texture2D*) addCGImage: (CGImageRef) image;
 
 /** Purges the dictionary of loaded textures.
  * Call this method if you receive the "Memory Warning"
@@ -63,5 +63,4 @@
 /** Deletes a texture from the Texture Manager
  */
 -(void) removeTexture: (Texture2D*) tex;
-
 @end

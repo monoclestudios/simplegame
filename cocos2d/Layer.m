@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -26,6 +20,9 @@
 #import "Director.h"
 
 @implementation Layer
+
+@synthesize isTouchEnabled, isAccelerometerEnabled;
+
 -(id) init
 {
 	if( ! (self=[super init]) )
@@ -45,11 +42,15 @@
 
 -(void) onEnter
 {
-	[super onEnter];
-	
+
+	// register 'parent' nodes first
+	// since events are propagated in reverse order
 	if( isTouchEnabled )
 		[[Director sharedDirector] addEventHandler:self];
-	
+
+	// the iterate over all the children
+	[super onEnter];
+
 	if( isAccelerometerEnabled )
 		[[UIAccelerometer sharedAccelerometer] setDelegate:self];
 }
@@ -235,4 +236,24 @@
 	
 	[self add: [layers objectAtIndex:n]];		
 }
+
+-(void) switchToAndReleaseMe: (unsigned int) n
+{
+	if( n >= [layers count] ) {
+		NSException* myException = [NSException
+									exceptionWithName:@"MultiplexLayerInvalidIndex"
+									reason:@"Invalid index in MultiplexLayer switchTo message"
+									userInfo:nil];
+		@throw myException;		
+	}
+	
+	[self remove: [layers objectAtIndex:enabledLayer]];
+	
+	[layers replaceObjectAtIndex:enabledLayer withObject:[NSNull null]];
+	
+	enabledLayer = n;
+	
+	[self add: [layers objectAtIndex:n]];		
+}
+
 @end

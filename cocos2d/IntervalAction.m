@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *cpVect
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -142,7 +136,7 @@
 
 -(id) copyWithZone: (NSZone*) zone
 {
-	Action *copy = [[[self class] allocWithZone: zone] initOne: [[actions objectAtIndex:0] copy] two: [[actions objectAtIndex:1] copy] ];
+	Action *copy = [[[self class] allocWithZone:zone] initOne:[[[actions objectAtIndex:0] copy] autorelease] two:[[[actions objectAtIndex:1] copy] autorelease] ];
     return copy;
 }
 
@@ -216,6 +210,7 @@
 -(id) initWithAction: (IntervalAction*) action times: (unsigned int) t
 {
 	int d = [action duration] * t;
+
 	if( !(self=[super initWithDuration: d ]) )
 		return nil;
 
@@ -228,10 +223,9 @@
 
 -(id) copyWithZone: (NSZone*) zone
 {
-	Action *copy = [[[self class] allocWithZone: zone] initWithAction: [other copy] times: times];
+	Action *copy = [[[self class] allocWithZone:zone] initWithAction:[[other copy] autorelease] times:times];
     return copy;
 }
-
 
 -(void) dealloc
 {
@@ -241,25 +235,50 @@
 
 -(void) start
 {
+	total = 0;
 	[super start];
 	other.target = target;
 	[other start];
 }
 
--(void) step:(ccTime) dt
+//-(void) step:(ccTime) dt
+//{
+//	[other step: dt];
+//	if( [other isDone] ) {
+//		total++;
+//		[other start];
+//	}
+//}
+
+// issue #80. Instead of hooking step:, hook update: since it can be called by any 
+// container action like Repeat, Sequence, AccelDeccel, etc..
+-(void) update:(ccTime) dt
 {
-	[other step: dt];
-	if( [other isDone] ) {
+	ccTime t = dt * times;
+	float r = fmodf(t, 1.0f);
+	if( t > total+1 ) {
+		[other update:1.0f];
 		total++;
-		[self start];
+		[other stop];
+		[other start];
+		[other update:0.0];
+	} else {
+		// fix last repeat position
+		// else it could be 0.
+		if( dt== 1.0f)
+			r=1.0f;
+		[other update: MIN(r,1)];
 	}
 }
+
 -(BOOL) isDone
 {
-	// times == 0, Always repeat
-	if( !times )
-		return NO;
 	return ( total == times );
+}
+
+- (IntervalAction *) reverse
+{
+	return [Repeat actionWithAction:[other reverse] times: times];
 }
 @end
 
@@ -316,7 +335,7 @@
 
 -(id) copyWithZone: (NSZone*) zone
 {
-	Action *copy = [[[self class] allocWithZone: zone] initOne: [one copy] two: [two copy] ];
+	Action *copy = [[[self class] allocWithZone: zone] initOne: [[one copy] autorelease] two: [[two copy] autorelease] ];
     return copy;
 }
 
@@ -741,7 +760,7 @@
 
 -(id) copyWithZone: (NSZone*) zone
 {
-	Action *copy = [[[self class] allocWithZone: zone] initWithAction: [other copy] rate: rate];
+	Action *copy = [[[self class] allocWithZone: zone] initWithAction: [[other copy] autorelease] rate: rate];
     return copy;
 }
 
@@ -792,7 +811,7 @@
 
 -(id) copyWithZone: (NSZone*) zone
 {
-	Action *copy = [[[self class] allocWithZone: zone] initWithAction: [other copy] ];
+	Action *copy = [[[self class] allocWithZone: zone] initWithAction: [[other copy] autorelease] ];
     return copy;
 }
 
@@ -846,7 +865,7 @@
 
 -(id) copyWithZone: (NSZone*) zone
 {
-	Action *copy = [[[self class] allocWithZone: zone] initWithAction: [other copy] speed: speed];
+	Action *copy = [[[self class] allocWithZone:zone] initWithAction:[[other copy] autorelease] speed:speed];
     return copy;
 }
 
@@ -910,7 +929,7 @@
 
 -(id) copyWithZone: (NSZone*) zone
 {
-	return [[[self class] allocWithZone: zone] initWithAction: [other copy] ];
+	return [[[self class] allocWithZone: zone] initWithAction:[[other copy] autorelease] ];
 }
 
 -(void) dealloc

@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -23,13 +17,13 @@
 #import "Director.h"
 
 @interface Menu (Private)
-// align items
--(void) alignItems;
 // if a point in inside an item, in returns the item
 -(id) itemInPoint: (CGPoint) p idx:(int*)idx;
 @end
 
 @implementation Menu
+
+@synthesize opacity;
 
 - (id) init
 {
@@ -72,7 +66,7 @@
 		[self add: i z:z];
 		i = va_arg(args, MenuItem*);
 	}
-	[self alignItems];
+//	[self alignItemsVertically];
 	
 	return self;
 }
@@ -82,7 +76,9 @@
 	[super dealloc];
 }
 
-- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+#pragma mark Menu - Events
+
+- (BOOL)ccTouchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
 	UITouch *touch = [touches anyObject];	
 	CGPoint point = [touch locationInView: [touch view]];
@@ -93,10 +89,13 @@
 	if( item ) {
 		[item selected];
 		selectedItem = idx;
+		return kEventHandled;
 	}
+	
+	return kEventIgnored;
 }
 
-- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
+- (BOOL)ccTouchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
 	UITouch *touch = [touches anyObject];	
 	CGPoint point = [touch locationInView: [touch view]];
@@ -106,13 +105,18 @@
 	if( item ) {
 		[item unselected];
 		[item activate];
+		return kEventHandled;
+
 	} else if( selectedItem != -1 ) {
 		[[children objectAtIndex:selectedItem] unselected];
 		selectedItem = -1;
+		
+		// don't return kEventHandled here, since we are not handling it!
 	}
+	return kEventIgnored;
 }
 
-- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
+- (BOOL)ccTouchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
 	UITouch *touch = [touches anyObject];	
 	CGPoint point = [touch locationInView: [touch view]];
@@ -127,6 +131,7 @@
 				[[children objectAtIndex:selectedItem] unselected];
 			[item selected];
 			selectedItem = idx;
+			return kEventHandled;
 		}
 
 	// "mouse" draged outside the selected button
@@ -134,13 +139,30 @@
 		if( selectedItem != -1 ) {
 			[[children objectAtIndex:selectedItem] unselected];
 			selectedItem = -1;
+			
+			// don't return kEventHandled here, since we are not handling it!
 		}
+	}
+	
+	return kEventIgnored;
+}
+
+#pragma mark Menu - Alignment
+-(void) alignItemsVertically
+{
+	int incY = [[children objectAtIndex:0] contentSize].height + 5;
+	int initialY =  (incY * ([children count]-1))/2;
+	
+	for( MenuItem* item in children ) {
+		[item setPosition:cpv(0,initialY)];
+		initialY -= incY;
 	}
 }
 
--(void) alignItems
+// XXX: deprecated
+-(void) alignItemsVerticallyOld
 {
-	int incY = [[children objectAtIndex:0] height] + 5;
+	int incY = [[children objectAtIndex:0] contentSize].height + 5;
 	int initialY =  (incY * [children count])/2;
 	
 	for( MenuItem* item in children ) {
@@ -149,10 +171,43 @@
 	}
 }
 
+-(void) alignItemsHorizontally
+{
+	
+	int totalX = 0;
+	BOOL first = YES;
+	for( MenuItem* item in children ) {
+		if( first )
+			first = NO;
+		else
+			totalX += [item contentSize].width + 5;
+	}
+
+	int initialX = totalX / 2;
+	
+	int offsetX = 0;
+	for( MenuItem* item in children ) {
+		[item setPosition:cpv(-initialX+offsetX,0)];
+		offsetX += [item contentSize].width + 5;
+	}
+}
+
+#pragma mark Menu - Opacity Protocol
+
+/** Override synthesized setOpacity to recurse items */
+- (void) setOpacity:(GLubyte)newOpacity
+{
+	opacity = newOpacity;
+	for(id<CocosNodeOpacity> item in children)
+		[item setOpacity:opacity];
+}
+
+#pragma mark Menu - Private
+
 -(id) itemInPoint: (CGPoint) point idx:(int*)idx
 {
 	point = [[Director sharedDirector] convertCoordinate: point];
-
+	
 	int i=0;
 	for( MenuItem* item in children ) {
 		*idx = i;
@@ -165,4 +220,7 @@
 	}
 	return nil;
 }
+
+
+
 @end

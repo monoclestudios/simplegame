@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -82,7 +76,8 @@ Example:
 @end
 
 
-/** Repeats an action a number of times
+/** Repeats an action a number of times.
+ * To repeat an action forever use the RepeatForever action.
  */
 @interface Repeat : IntervalAction <NSCopying>
 {
@@ -90,9 +85,9 @@ Example:
 	unsigned int total;
 	IntervalAction *other;
 }
-/** creates the action */
+/** creates the Repeat action. Times is an unsigned integer between 1 and pow(2,30) */
 +(id) actionWithAction: (IntervalAction*) action times: (unsigned int) t;
-/** initializes the action */
+/** initializes the action. Times is an unsigned integer between 1 and pow(2,30) */
 -(id) initWithAction: (IntervalAction*) action times: (unsigned int) t;
 @end
 
@@ -105,13 +100,13 @@ Example:
 }
 /** helper constructor to create an array of spawned actions */
 +(id) actions: (IntervalAction*) action1, ... NS_REQUIRES_NIL_TERMINATION;
-/** creates the action */
+/** creates the Spawn action */
 +(id) actionOne: (IntervalAction*) one two:(IntervalAction*) two;
-/** initializes the action */
+/** initializes the Spawn action with the 2 actions to spawn */
 -(id) initOne: (IntervalAction*) one two:(IntervalAction*) two;
 @end
 
-/**  Rotates a `CocosNode` object to a certain angle by modifying it's
+/**  Rotates a CocosNode object to a certain angle by modifying it's
  rotation attribute.
  The direction will be decided by the shortest angle.
 */ 
@@ -181,7 +176,7 @@ Example:
 -(id) initWithDuration: (ccTime) t position: (cpVect) pos height: (ccTime) h jumps:(int)j;
 @end
 
-/** Moves a `CocosNode` object to a position simulating a jump movement by modifying it's position attribute.
+/** Moves a CocosNode object to a position simulating a jump movement by modifying it's position attribute.
 */ 
  @interface JumpTo : JumpBy <NSCopying>
 {

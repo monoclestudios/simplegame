@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -27,6 +21,10 @@
 #import "CameraAction.h"
 #import "Layer.h"
 #import "Camera.h"
+
+enum {
+	kSceneFade = 0xFADEFADE,
+};
 
 @implementation TransitionScene
 +(id) transitionWithDuration:(ccTime) t scene:(Scene*)s
@@ -100,6 +98,11 @@
 //	[outScene stopAllActions];
 
 	[self schedule:@selector(step:) interval:0];
+}
+
+-(void) dealloc
+{
+	[super dealloc];
 }
 @end
 
@@ -654,10 +657,10 @@
 	ColorLayer *l = [ColorLayer layerWithColor: 0x00000000];
 	[inScene setVisible: NO];
 	
-	[self add: l z:2 name:@"fade"];
+	[self add: l z:2 tag:kSceneFade];
 	
 	
-	CocosNode *f = [self get:@"fade"];
+	CocosNode *f = [self getByTag:kSceneFade];
 
 	IntervalAction *a = [Sequence actions:
 							[FadeIn actionWithDuration:duration/2],
@@ -671,7 +674,7 @@
 -(void) onExit
 {
 	[super onExit];
-	[self removeByName: @"fade"];
+	[self removeByTag:kSceneFade];
 }
 
 -(void) hideOutShowIn

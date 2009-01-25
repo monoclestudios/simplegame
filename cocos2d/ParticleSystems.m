@@ -1,20 +1,14 @@
-/* cocos2d-iphone
+/* cocos2d for iPhone
+ *
+ * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; version 3 or (it is your choice) any later
- * version. 
+ * it under the terms of the 'cocos2d for iPhone' license.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ * You will find a copy of this license within the cocos2d for iPhone
+ * distribution inside the "LICENSE" file.
  *
  */
 
@@ -728,6 +722,85 @@
 	endColor.g = 0.0f;
 	endColor.b = 0.0f;
 	endColor.a = 1.0f;
+	endColorVar.r = 0.0f;
+	endColorVar.g = 0.0f;
+	endColorVar.b = 0.0f;
+	endColorVar.a = 0.0f;
+	
+	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
+	[texture retain];
+	
+	// additive
+	blendAdditive = NO;
+	
+	return self;
+}
+@end
+
+@implementation ParticleSnow
+-(id) init
+{
+	return [self initWithTotalParticles:700];
+}
+
+-(id) initWithTotalParticles:(int)p
+{
+	if( !(self=[super initWithTotalParticles:p]) )
+		return nil;
+	
+	// duration
+	duration = -1;
+	
+	// gravity
+	gravity.x = 0;
+	gravity.y = -1;
+	
+	// angle
+	angle = 90;
+	angleVar = 5;
+	
+	// speed of particles
+	speed = 1;
+	speedVar = 1;
+	
+	// radial
+	radialAccel = 0;
+	radialAccelVar = 1;
+	
+	// tagential
+	tangentialAccel = 0;
+	tangentialAccelVar = 1;
+	
+	// emitter position
+	position.x = 160;
+	position.y = 490;
+	posVar.x = 160;
+	posVar.y = 00;
+	
+	// life of particles
+	life = 45;
+	lifeVar = 15;
+	
+	// size, in pixels
+	size = 15.0f;
+	sizeVar = 10.0f;
+	
+	// emits per second
+	emissionRate = 10;
+	
+	// color of particles
+	startColor.r = 1.0f;
+	startColor.g = 1.0f;
+	startColor.b = 1.0f;
+	startColor.a = 1.0f;
+	startColorVar.r = 0.0f;
+	startColorVar.g = 0.0f;
+	startColorVar.b = 0.0f;
+	startColorVar.a = 0.0f;
+	endColor.r = 1.0f;
+	endColor.g = 1.0f;
+	endColor.b = 1.0f;
+	endColor.a = 0.0f;
 	endColorVar.r = 0.0f;
 	endColorVar.g = 0.0f;
 	endColorVar.b = 0.0f;
