@@ -31,7 +31,9 @@
         [MenuItemFont setFontName:@"Helvetica"];
         MenuItem *start = [MenuItemFont itemFromString:@"Start Game" target:self selector:@selector(startGame:)];
         MenuItem *help = [MenuItemFont itemFromString:@"Help" target:self selector:@selector(help:)];
-		[self add:[Menu menuWithItems:start, help, nil]];
+		Menu *menu = [Menu menuWithItems:start, help, nil];
+		[menu alignItemsVertically];
+        [self add:menu];
     }
     return self;
 }
