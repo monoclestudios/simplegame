@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -16,7 +16,7 @@
 
 #import "chipmunk.h"
 #import "CocosNode.h"
-#import "types.h"
+#import "ccTypes.h"
 
 typedef struct sParticle
 {
@@ -48,6 +48,8 @@ typedef struct sParticle
 	cpVect gravity;
 
 	// position is from "superclass" CocosNode
+	// Emitter source position
+	cpVect source;
 	// Position variance
 	cpVect posVar;
 	
@@ -130,6 +132,8 @@ typedef struct sParticle
 @property (readwrite,assign) cpVect gravity;
 /** How many seconds the emitter wil run. -1 means 'forever' */
 @property (readwrite,assign) float duration;
+/** Source location of particles respective to emitter location */
+@property (readwrite,assign) cpVect source;
 /** Position variance of the emitter */
 @property (readwrite,assign) cpVect posVar;
 /** life, and life variation of each particle */

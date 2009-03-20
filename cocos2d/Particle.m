@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -27,16 +27,14 @@
 #import "Particle.h"
 #import "Primitives.h"
 #import "TextureMgr.h"
+#import "ccMacros.h"
 
 // support
 #import "OpenGL_Internal.h"
 
-#define RANDOM_FLOAT() (((float)random() / (float)0x3fffffff )-1.0f)
-
-
 @implementation ParticleSystem
 @synthesize active, duration;
-@synthesize posVar;
+@synthesize source, posVar;
 @synthesize particleCount;
 @synthesize life, lifeVar;
 @synthesize angle, angleVar;
@@ -131,37 +129,37 @@
 	cpVect v;
 
 	// position
-	particle->pos.x = posVar.x * RANDOM_FLOAT();
-	particle->pos.y = posVar.y * RANDOM_FLOAT();
+	particle->pos.x = source.x + posVar.x * CCRANDOM_MINUS1_1();
+	particle->pos.y = source.y + posVar.y * CCRANDOM_MINUS1_1();
 	
 	// direction
-	float a = DEGREES_TO_RADIANS( angle + angleVar * RANDOM_FLOAT() );
+	float a = (cpFloat)DEGREES_TO_RADIANS( angle + angleVar * CCRANDOM_MINUS1_1() );
 	v.y = sinf( a );
 	v.x = cosf( a );
-	float s = speed + speedVar * RANDOM_FLOAT();
+	float s = speed + speedVar * CCRANDOM_MINUS1_1();
 	particle->dir = cpvmult( v, s );
 	
 	// radial accel
-	particle->radialAccel = radialAccel + radialAccelVar * RANDOM_FLOAT();
+	particle->radialAccel = radialAccel + radialAccelVar * CCRANDOM_MINUS1_1();
 	
 	// tangential accel
-	particle->tangentialAccel = tangentialAccel + tangentialAccelVar * RANDOM_FLOAT();
+	particle->tangentialAccel = tangentialAccel + tangentialAccelVar * CCRANDOM_MINUS1_1();
 	
 	// life
-	particle->life = life + lifeVar * RANDOM_FLOAT();
+	particle->life = life + lifeVar * CCRANDOM_MINUS1_1();
 	
 	// Color
 	ccColorF start;
-	start.r = startColor.r + startColorVar.r * RANDOM_FLOAT();
-	start.g = startColor.g + startColorVar.g * RANDOM_FLOAT();
-	start.b = startColor.b + startColorVar.b * RANDOM_FLOAT();
-	start.a = startColor.a + startColorVar.a * RANDOM_FLOAT();
+	start.r = startColor.r + startColorVar.r * CCRANDOM_MINUS1_1();
+	start.g = startColor.g + startColorVar.g * CCRANDOM_MINUS1_1();
+	start.b = startColor.b + startColorVar.b * CCRANDOM_MINUS1_1();
+	start.a = startColor.a + startColorVar.a * CCRANDOM_MINUS1_1();
 
 	ccColorF end;
-	end.r = endColor.r + endColorVar.r * RANDOM_FLOAT();
-	end.g = endColor.g + endColorVar.g * RANDOM_FLOAT();
-	end.b = endColor.b + endColorVar.b * RANDOM_FLOAT();
-	end.a = endColor.a + endColorVar.a * RANDOM_FLOAT();
+	end.r = endColor.r + endColorVar.r * CCRANDOM_MINUS1_1();
+	end.g = endColor.g + endColorVar.g * CCRANDOM_MINUS1_1();
+	end.b = endColor.b + endColorVar.b * CCRANDOM_MINUS1_1();
+	end.a = endColor.a + endColorVar.a * CCRANDOM_MINUS1_1();
 	
 	particle->color = start;
 	particle->deltaColor.r = (end.r - start.r) / particle->life;
@@ -170,13 +168,13 @@
 	particle->deltaColor.a = (end.a - start.a) / particle->life;
 
 	// size
-	particle->size = size + sizeVar * RANDOM_FLOAT();	
+	particle->size = size + sizeVar * CCRANDOM_MINUS1_1();	
 }
 
 -(void) step: (ccTime) dt
 {
-	if( active ) {
-		float rate = 1.0 / emissionRate;
+	if( active && emissionRate ) {
+		float rate = 1.0f / emissionRate;
 		emitCounter += dt;
 		while( particleCount < totalParticles && emitCounter > rate ) {
 			[self addParticle];
@@ -243,6 +241,12 @@
 			particleCount--;
 		}
 	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, verticesID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(ccPointSprite)*totalParticles, vertices,GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, colorsID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(ccColorF)*totalParticles, colors,GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 -(void) stopSystem
@@ -260,7 +264,7 @@
 
 -(void) draw
 {
-	int blendSrc, blendDst;
+//	int blendSrc, blendDst;
 //	int colorMode;
 	
 	glEnable(GL_TEXTURE_2D);
@@ -271,7 +275,6 @@
 	
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glBindBuffer(GL_ARRAY_BUFFER, verticesID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(ccPointSprite)*totalParticles, vertices,GL_DYNAMIC_DRAW);
 	glVertexPointer(2,GL_FLOAT,sizeof(ccPointSprite),0);
 	
 	glEnableClientState(GL_POINT_SIZE_ARRAY_OES);
@@ -279,12 +282,11 @@
 	
 	glEnableClientState(GL_COLOR_ARRAY);
 	glBindBuffer(GL_ARRAY_BUFFER, colorsID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(ccColorF)*totalParticles, colors,GL_DYNAMIC_DRAW);
 	glColorPointer(4,GL_FLOAT,0,0);
 
 	// save blend state
-	glGetIntegerv(GL_BLEND_DST, &blendDst);
-	glGetIntegerv(GL_BLEND_SRC, &blendSrc);
+//	glGetIntegerv(GL_BLEND_DST, &blendDst);
+//	glGetIntegerv(GL_BLEND_SRC, &blendSrc);
 	if( blendAdditive )
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 	else
@@ -302,7 +304,10 @@
 	glDrawArrays(GL_POINTS, 0, particleIdx);
 	
 	// restore blend state
-	glBlendFunc( blendSrc, blendDst );
+//	glBlendFunc( blendSrc, blendDst );
+	// XXX: restoring the default blend function
+	// XXX: this should be in sync with Director setAlphaBlending
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
 #if 0
 	// restore color mode

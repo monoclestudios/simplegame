@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -12,8 +12,12 @@
  *
  */
 
+// cocos2d
 #import "TextureAtlas.h"
 #import "TextureMgr.h"
+
+// support
+#import "Support/Texture2D.h"
 
 @interface TextureAtlas (Private)
 -(void) initIndices;
@@ -26,20 +30,20 @@
 
 #pragma mark TextureAtlas - alloc & init
 
-+(id) textureAtlasWithFile:(NSString*) file capacity: (int) n
++(id) textureAtlasWithFile:(NSString*) file capacity: (NSUInteger) n
 {
 	return [[[self alloc] initWithFile:file capacity:n] autorelease];
 }
 
--(id) initWithFile:(NSString*)file capacity:(int)n
+-(id) initWithFile:(NSString*)file capacity:(NSUInteger)n
 {
 	if( ! (self=[super init]) )
 		return nil;
 	
 	totalQuads = n;
-	
+
 	// retained in property
-	self.texture = [[TextureMgr sharedTextureMgr] addImage:file];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage:file];	
 	
 	texCoordinates = malloc( sizeof(texCoordinates[0]) * totalQuads );
 	vertices = malloc( sizeof(vertices[0]) * totalQuads );
@@ -78,20 +82,22 @@
 
 -(void) initIndices
 {
-	for( int i=0;i<totalQuads;i++) {
+	for( NSUInteger i=0;i<totalQuads;i++) {
 		indices[i*6+0] = i*4+0;
 		indices[i*6+1] = i*4+1;
 		indices[i*6+2] = i*4+2;
 
-		indices[i*6+3] = i*4+1;
+		// inverted index. issue #179
+		indices[i*6+5] = i*4+1;
 		indices[i*6+4] = i*4+2;
-		indices[i*6+5] = i*4+3;
+		indices[i*6+3] = i*4+3;
+		
 	}
 }
 
 #pragma mark TextureAtlas - Updates
 
--(void) updateQuadWithTexture: (ccQuad2*) quadT vertexQuad:(ccQuad3*) quadV atIndex:(int) n
+-(void) updateQuadWithTexture: (ccQuad2*) quadT vertexQuad:(ccQuad3*) quadV atIndex:(NSUInteger) n
 {
 	
 	NSAssert( n >= 0 && n < totalQuads, @"updateQuadWithTexture: Invalid index");
@@ -102,7 +108,7 @@
 
 #pragma mark TextureAtlas - Resize
 
--(void) resizeCapacity: (int) n
+-(void) resizeCapacity: (NSUInteger) n
 {
 	if( n == totalQuads )
 		return;
@@ -138,32 +144,12 @@
 	return [self drawNumberOfQuads: totalQuads];
 }
 
--(void) drawNumberOfQuads: (int) n
-{
-//	int	minFilter, magFilter;
-//	int	wrapS, wrapT;
-	
-//	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &minFilter);
-//	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, &magFilter);
-//	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, &wrapS);
-//	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, &wrapT);
-	
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		
+-(void) drawNumberOfQuads: (NSUInteger) n
+{		
 	glBindTexture(GL_TEXTURE_2D, [texture name]);
 	glVertexPointer(3, GL_FLOAT, 0, vertices);
 	glTexCoordPointer(2, GL_FLOAT, 0, texCoordinates);
-	glDrawElements(GL_TRIANGLES, n*6, GL_UNSIGNED_SHORT, indices);
-	
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
+	glDrawElements(GL_TRIANGLES, n*6, GL_UNSIGNED_SHORT, indices);	
 }
 
 @end

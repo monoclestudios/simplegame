@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -22,7 +22,7 @@
 //
 @implementation IntervalAction
 
-@synthesize duration;
+@synthesize elapsed, duration;
 
 -(id) init
 {
@@ -45,14 +45,14 @@
 		return nil;
 	
 	duration = d;
-	elapsed = 0.0;
+	elapsed = 0.0f;
 	return self;
 }
 
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] ];
-    return copy;
+	return copy;
 }
 
 
@@ -77,7 +77,7 @@
 		@throw myException;
 	}
 	
-	elapsed = 0.0;
+	elapsed = 0.0f;
 }
 
 - (IntervalAction*) reverse
@@ -137,7 +137,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone:zone] initOne:[[[actions objectAtIndex:0] copy] autorelease] two:[[[actions objectAtIndex:1] copy] autorelease] ];
-    return copy;
+	return copy;
 }
 
 -(void) dealloc
@@ -159,7 +159,7 @@
 -(void) update: (ccTime) t
 {
 	int found = 0;
-	ccTime new_t = 0.0;
+	ccTime new_t = 0.0f;
 	
 	if( t >= split ) {
 		found = 1;
@@ -224,7 +224,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone:zone] initWithAction:[[other copy] autorelease] times:times];
-    return copy;
+	return copy;
 }
 
 -(void) dealloc
@@ -261,7 +261,7 @@
 		total++;
 		[other stop];
 		[other start];
-		[other update:0.0];
+		[other update:0.0f];
 	} else {
 		// fix last repeat position
 		// else it could be 0.
@@ -318,7 +318,7 @@
 	ccTime d1 = [one_ duration];
 	ccTime d2 = [two_ duration];	
 	
-	[super initWithDuration: fmax(d1,d2)];
+	[super initWithDuration: fmaxf(d1,d2)];
 
 	one = one_;
 	two = two_;
@@ -336,7 +336,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone: zone] initOne: [[one copy] autorelease] two: [[two copy] autorelease] ];
-    return copy;
+	return copy;
 }
 
 -(void) dealloc
@@ -388,8 +388,8 @@
 
 -(id) copyWithZone: (NSZone*) zone
 {
-	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] angle: angle];
-    return copy;
+	Action *copy = [[[self class] allocWithZone: zone] initWithDuration:[self duration] angle: angle];
+	return copy;
 }
 
 -(void) start
@@ -430,7 +430,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] angle: angle];
-    return copy;
+	return copy;
 }
 
 -(void) start
@@ -473,7 +473,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] position: endPosition];
-    return copy;
+	return copy;
 }
 
 -(void) start
@@ -510,7 +510,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] position: delta];
-    return copy;
+	return copy;
 }
 
 -(void) start
@@ -549,7 +549,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] position: delta height:height jumps:jumps];
-    return copy;
+	return copy;
 }
 
 -(void) start
@@ -560,7 +560,7 @@
 
 -(void) update: (ccTime) t
 {
-	ccTime y = height * fabs( sinf(t * M_PI * jumps ) );
+	ccTime y = height * fabsf( sinf(t * (cpFloat)M_PI * jumps ) );
 	y += delta.y * t;
 	ccTime x = delta.x * t;
 	target.position = cpv( startPosition.x + x, startPosition.y + y );
@@ -597,26 +597,45 @@
 	if( !(self=[super initWithDuration: t]) )
 		return nil;
 	
-	endScale = s;
+	endScaleX = s;
+	endScaleY = s;
+	return self;
+}
+
++(id) actionWithDuration: (ccTime) t scaleX:(float)sx scaleY:(float)sy 
+{
+	return [[[self alloc] initWithDuration: t scaleX:sx scaleY:sy] autorelease];
+}
+
+-(id) initWithDuration: (ccTime) t scaleX:(float)sx scaleY:(float)sy
+{
+	if( !(self=[super initWithDuration: t]) )
+		return nil;
+	
+	endScaleX = sx;
+	endScaleY = sy;
 	return self;
 }
 
 -(id) copyWithZone: (NSZone*) zone
 {
-	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] scale: endScale];
-    return copy;
+	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] scaleX: endScaleX scaleY:endScaleY];
+	return copy;
 }
 
 -(void) start
 {
 	[super start];
-	startScale = [target scale];
-	delta = endScale - startScale;
+	startScaleX = [target scaleX];
+	startScaleY = [target scaleY];
+	deltaX = endScaleX - startScaleX;
+	deltaY = endScaleY - startScaleY;
 }
 
 -(void) update: (ccTime) t
-{	
-	[target setScale: (startScale + delta * t ) ];	
+{
+	[target setScaleX: (startScaleX + deltaX * t ) ];
+	[target setScaleY: (startScaleY + deltaY * t ) ];
 }
 @end
 
@@ -627,12 +646,13 @@
 -(void) start
 {
 	[super start];
-	delta = startScale * endScale - startScale;
+	deltaX = startScaleX * endScaleX - startScaleX;
+	deltaY = startScaleY * endScaleY - startScaleY;
 }
 
 -(IntervalAction*) reverse
 {
-	return [ScaleBy actionWithDuration: duration scale: 1/endScale];
+	return [ScaleBy actionWithDuration: duration scaleX: 1/endScaleX scaleY:1/endScaleY];
 }
 @end
 
@@ -656,13 +676,13 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] blinks: times];
-    return copy;
+	return copy;
 }
 
 -(void) update: (ccTime) t
 {
 	ccTime slice = 1.0f / times;
-	ccTime m = fmod(t, slice);
+	ccTime m = fmodf(t, slice);
 	target.visible = (m > slice/2) ? YES : NO;
 }
 
@@ -721,7 +741,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] opacity: toOpacity];
-    return copy;
+	return copy;
 }
 
 -(void) start
@@ -740,6 +760,7 @@
 // Accelerate
 //
 @implementation Accelerate
+@synthesize rate;
 + (id) actionWithAction: (IntervalAction*) action rate: (float) r
 {
 	return [[[self alloc] initWithAction:action rate:r ] autorelease];
@@ -761,7 +782,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone: zone] initWithAction: [[other copy] autorelease] rate: rate];
-    return copy;
+	return copy;
 }
 
 - (void) dealloc
@@ -779,7 +800,7 @@
 
 - (void) update: (ccTime) t
 {
-	[other update: pow(t,rate) ];
+	[other update: powf(t,rate) ];
 }
 
 - (IntervalAction*) reverse
@@ -812,7 +833,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone: zone] initWithAction: [[other copy] autorelease] ];
-    return copy;
+	return copy;
 }
 
 -(void) dealloc
@@ -831,7 +852,7 @@
 -(void) update: (ccTime) t
 {
 	ccTime ft = (t-0.5f) * 12;
-	ccTime nt = 1.0f/( 1.0f + exp(-ft) );
+	ccTime nt = 1.0f/( 1.0f + expf(-ft) );
 	[other update: nt];	
 }
 
@@ -845,6 +866,7 @@
 // Speed
 //
 @implementation Speed
+@synthesize speed;
 +(id) actionWithAction: (IntervalAction*) action speed:(ccTime) s
 {
 	return [[[self alloc] initWithAction: action speed:s] autorelease ];
@@ -866,7 +888,7 @@
 -(id) copyWithZone: (NSZone*) zone
 {
 	Action *copy = [[[self class] allocWithZone:zone] initWithAction:[[other copy] autorelease] speed:speed];
-    return copy;
+	return copy;
 }
 
 -(void) dealloc
@@ -892,6 +914,7 @@
 	return [Speed actionWithAction: [other reverse] speed:speed];
 }
 @end
+
 
 //
 // DelayTime
@@ -1037,7 +1060,7 @@
 
 -(void) update: (ccTime) t
 {
-	int idx=0;
+	NSUInteger idx=0;
 	
 	ccTime slice = 1.0f / [[animation frames] count];
 	

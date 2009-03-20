@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -32,12 +32,6 @@
 
 /** align items vertically */
 -(void) alignItemsVertically;
-
-/** align items vertically using the v0.5 algorithm
- * @deprecated This method will be removed in v0.7
- */
--(void) alignItemsVerticallyOld;
-
 
 /** align items horizontally */
 -(void) alignItemsHorizontally;

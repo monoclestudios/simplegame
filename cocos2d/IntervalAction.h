@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -45,6 +45,7 @@ Example:
 	ccTime duration;
 }
 
+@property (readonly) ccTime elapsed;
 @property (readwrite,assign) ccTime duration;
 
 /** creates the action */
@@ -57,6 +58,7 @@ Example:
 -(BOOL) isDone;
 /** returns a reversed action */
 - (IntervalAction*) reverse;
+
 @end
 
 /** Runs actions sequentially, one after another
@@ -188,15 +190,23 @@ Example:
  */
 @interface ScaleTo : IntervalAction <NSCopying>
 {
-	float scale;
-	float startScale;
-	float endScale;
-	float delta;
+	float scaleX;
+	float scaleY;
+	float startScaleX;
+	float startScaleY;
+	float endScaleX;
+	float endScaleY;
+	float deltaX;
+	float deltaY;
 }
-/** creates the action */
+/** creates the action with the same scale factor for X and Y */
 +(id) actionWithDuration: (ccTime) t scale:(float) s;
-/** initializes the action */
+/** initializes the action with the same scale factor for X and Y */
 -(id) initWithDuration: (ccTime) t scale:(float) s;
+/** creates the action with and X factor and a Y factor */
++(id) actionWithDuration: (ccTime) t scaleX:(float) sx scaleY:(float)sy;
+/** initializes the action with and X factor and a Y factor */
+-(id) initWithDuration: (ccTime) t scaleX:(float) sx scaleY:(float)sy;
 @end
 
 /** Scales a CocosNode object a zoom factor by modifying it's scale attribute.
@@ -245,12 +255,16 @@ Example:
 
 
 /** Changes the acceleration of an action
+ @deprecated Use EaseIn or EaseOut instead. This Action will be removed in v0.8
  */
 @interface Accelerate: IntervalAction <NSCopying>
 {
 	IntervalAction *other;
 	float rate;
 }
+/** rate for the acceleration. Can be changed in runtime */
+@property (readwrite) float rate;
+
 /** creates the action */
 +(id) actionWithAction: (IntervalAction*) action rate: (float) rate;
 /** initializes the action */
@@ -258,6 +272,7 @@ Example:
 @end
 
 /** Makes an action change the travel speed but retain near normal speed at the beginning and ending.
+ @deprecated Use EaseInOut instead. This Action will be removed in v0.8
 */
 @interface AccelDeccel: IntervalAction <NSCopying>
 {
@@ -277,11 +292,15 @@ Example:
 	ccTime speed;
 	IntervalAction * other;
 }
+/** speed factor. Can be changed in runtime */
+@property (readwrite) ccTime speed;
+
 /** creates the action */
 +(id) actionWithAction: (IntervalAction*) action speed:(ccTime)s;
 /** initializes the action */
 -(id) initWithAction: (IntervalAction*) action speed:(ccTime)s;
 @end
+
 
 /** Delays the action a certain amount of seconds
 */
@@ -292,7 +311,7 @@ Example:
 
 /** Executes an action in reverse order, from time=duration to time=0
  
- WARNING: Use this action carefully. This action is not
+ @warning Use this action carefully. This action is not
  sequenceable. Use it as the default "reversed" method
  of your own actions, but using it outside the "reversed"
  scope is not recommended.

@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -18,13 +18,14 @@
 
 #import "Action.h"
 #import "chipmunk.h"
-#import "types.h"
+#import "cctypes.h"
 
 enum {
 	kCocosNodeTagInvalid = -1,
 };
 
 @class Camera;
+@class GridBase;
 
 /** CocosNode is the main element. Anything thats gets drawn or contains things that get drawn is a CocosNode.
  The most popular CocosNodes are: Scene, Layer, Sprite.
@@ -70,6 +71,9 @@ enum {
 	// a Camera
 	Camera *camera;
 	
+	// a Grid
+	GridBase *grid;
+	
 	// z-order value
 	int zOrder;
 
@@ -103,7 +107,7 @@ enum {
 }
 
 /** The z order of the node relative to it's "brothers": children of the same parent */
-@property(readwrite,assign) int zOrder;
+@property(readonly) int zOrder;
 /** The rotation (angle) of the node in degrees. 0 is the default rotation angle */
 @property(readwrite,assign) float rotation;
 /** The scale factor of the node. 1.0 is the default scale factor */
@@ -118,7 +122,9 @@ enum {
 @property(readwrite,assign) cpVect position;
 /** A Camera object that lets you move the node using camera coordinates.
  * If you use the Camera then position, scale & rotation won't be used */
-@property(readwrite,assign) Camera* camera;
+@property(readwrite,retain) Camera* camera;
+/** A Grid object that is used when applying Effects */
+@property(readwrite,retain) GridBase* grid;
 /** Whether of not the node is visible. Default is YES */
 @property(readwrite,assign) BOOL visible;
 /** The transformation anchor point. For Sprite and Label the transform anchor point is (width/2, height/2) */
@@ -132,6 +138,8 @@ enum {
 @property(readwrite,assign) BOOL relativeTransformAnchor;
 /** A tag used to identify the node easily */
 @property(readwrite,assign) int tag;
+/** An array with the children */
+@property (readonly) NSArray *children;
 
 // initializators
 //! creates a node
@@ -167,15 +175,15 @@ enum {
  */
 -(id) add: (CocosNode*)node z:(int)z parallaxRatio:(cpVect)c;
 /** Removes a child from the container
- * @warning It DOESN'T stop all running actions from the removed object and unschedules all scheduled selectors 
+ * @warning It DOESN'T stop all running actions from the removed object and it DOESN'T unschedules all scheduled selectors 
  */
 -(void) remove: (CocosNode*)node;
 /** Removes a child from the container given its tag
- * @warning It DOESN'T stop all running actions from the removed object and unschedules all scheduled selectors 
+ * @warning It DOESN'T stop all running actions from the removed object and it DOESN'T unschedules all scheduled selectors 
  */
 -(void) removeByTag:(int) tag;
 /** Removes all children from the container.
- * @warning It DOESN'T stop all running actions from the removed objecst and unschedules all scheduled selectors 
+ * @warning It DOESN'T stop all running actions from the removed object and it DOESN'T unschedules all scheduled selectors 
  */
 -(void) removeAll;
 /** Removes a child from the container by reference and stops all running actions and scheduled functions
@@ -192,7 +200,14 @@ enum {
  * @return returns a CocosNode object
  */
 -(CocosNode*) getByTag:(int) tag;
-
+/** Returns the absolute position of the CocosNode
+ * @return a cpVect value with the absolute position of the noe
+ */
+-(cpVect) absolutePosition;
+/** Reorders a child according to a new z value.
+ * The child MUST be already added.
+ */
+-(void) reorderChild:(CocosNode*)child z:(int)zOrder;
 
 // draw
 

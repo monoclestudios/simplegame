@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -69,7 +69,7 @@
 	Action *zoomAction;
 }
 
-@property (assign, readwrite) Label* label;
+@property (readwrite, retain) Label* label;
 
 /** set font size */
 +(void) setFontSize: (int) s;
@@ -91,6 +91,15 @@
 
 /** initializes a menu item from a string with a target/selector */
 -(id) initFromString: (NSString*) value target:(id) r selector:(SEL) s;
+
+/** Change this menuitem's label's string **/
+-(void) setString:(NSString *)string;
+
+/** Enable or disabled the MenuItemFont
+ @warning setIsEnabled changes the RGB color of the font
+ */
+-(void) setIsEnabled: (BOOL)enabled;
+
 @end
 
 
@@ -123,12 +132,12 @@
 /** A MenuItemToggle */
 @interface MenuItemToggle : MenuItem
 {
-	int selectedIndex;
+	NSUInteger selectedIndex;
 	NSMutableArray* subItems;
 }
 
 /** returns the selected item */
-@property (readwrite) int selectedIndex;
+@property (readwrite) NSUInteger selectedIndex;
 
 /** creates a menu item from a list of items with a target/selector */
 +(id) itemWithTarget:(id)t selector:(SEL)s items:(MenuItem*) item, ... NS_REQUIRES_NIL_TERMINATION;

@@ -11,9 +11,17 @@
 @implementation SimpleGameAppDelegate
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
+    UIWindow *window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+	[window setUserInteractionEnabled:YES];
+	[window setMultipleTouchEnabled:YES];
     [[Director sharedDirector] setLandscape: YES];
+	[[Director sharedDirector] attachInWindow:window];
+	
+	[window makeKeyAndVisible];
+    
     MenuScene * ms = [MenuScene node];
-    [[Director sharedDirector] runScene:ms];
+	
+	[[Director sharedDirector] runWithScene:ms];
 }
 
 @end

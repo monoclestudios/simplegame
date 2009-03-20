@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -28,8 +28,6 @@ enum {
 #pragma mark MenuItem
 
 @implementation MenuItem
-
-@synthesize opacity;
 
 @synthesize opacity;
 
@@ -106,10 +104,8 @@ enum {
 -(CGRect) rect
 {
 	NSAssert(1,@"MenuItem.rect must be overriden");
-	
-	// to make the compiler happy
-	CGRect a;
-	return a;
+
+	return CGRectNull;
 }
 
 -(CGSize) contentSize
@@ -176,7 +172,7 @@ enum {
 	}
 	
 	
-	label = [Label labelWithString:value dimensions:CGSizeMake((_fontSize+2)*[value length], (_fontSize+5)) alignment:UITextAlignmentCenter fontName:_fontName fontSize:_fontSize];
+	label = [Label labelWithString:value fontName:_fontName fontSize:_fontSize];
 
 	[label retain];
 	[label setOpacity:opacity];
@@ -185,6 +181,13 @@ enum {
 	transformAnchor = cpv( s.width/2, s.height/2 );
 	
 	return self;
+}
+
+-(void) setString:(NSString *)string
+{
+    [label setString:string];
+	CGSize s = label.contentSize;
+    transformAnchor = cpv( s.width/2, s.height/2 );
 }
 
 -(void) dealloc
@@ -208,7 +211,7 @@ enum {
 		[zoomAction release];
 		zoomAction = nil;
 
-		self.scale = 1.0;
+		self.scale = 1.0f;
 
 		[super activate];
 	}
@@ -220,7 +223,7 @@ enum {
 	if(isEnabled) {
 		[self stopAction: zoomAction];
 		[zoomAction release];
-		zoomAction = [[ScaleTo actionWithDuration:0.1 scale:1.2] retain];
+		zoomAction = [[ScaleTo actionWithDuration:0.1f scale:1.2f] retain];
 		[self do:zoomAction];
 	}
 }
@@ -231,7 +234,7 @@ enum {
 	if(isEnabled) {
 		[self stopAction: zoomAction];
 		[zoomAction release];
-		zoomAction = [[ScaleTo actionWithDuration:0.1 scale:1.0] retain];
+		zoomAction = [[ScaleTo actionWithDuration:0.1f scale:1.0f] retain];
 		[self do:zoomAction];
 	}
 }
@@ -380,8 +383,6 @@ enum {
 //
 @implementation MenuItemToggle
 
-@synthesize selectedIndex;
-
 +(id) itemWithTarget: (id)t selector: (SEL)sel items: (MenuItem*) item, ...
 {
 	va_list args;
@@ -419,6 +420,21 @@ enum {
 	[subItems release];
 	[super dealloc];
 }
+
+-(void)setSelectedIndex:(NSUInteger)index
+{
+	if( index != selectedIndex ) {
+		selectedIndex=index;
+		[self removeByTag:kCurrentItem];
+		[self add: [subItems objectAtIndex:selectedIndex] z:0 tag:kCurrentItem];
+	}
+}
+
+-(NSUInteger) selectedIndex
+{
+	return selectedIndex;
+}
+
 
 -(void) selected
 {

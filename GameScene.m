@@ -33,7 +33,7 @@
 }
 - (BOOL)ccTouchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
     MenuScene * ms = [MenuScene node];
-    [[Director sharedDirector] runScene:ms];
+    [[Director sharedDirector] replaceScene:ms];
     return kEventHandled;
 }
 @end

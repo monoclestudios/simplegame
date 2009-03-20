@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -12,16 +12,21 @@
  *
  */
 
+/* Idea of decoupling Window from Director taken from OC3D project: http://code.google.com/p/oc3d/
+ */
+ 
 // cocos2d imports
 #import "Director.h"
 #import "Camera.h"
 #import "Scheduler.h"
+#import "LabelAtlas.h"
+#import "ccMacros.h"
+#import "ccExceptions.h"
 
 // support imports
-#import "glu.h"
-#import "OpenGL_Internal.h"
-#import "Texture2D.h"
-#import "LabelAtlas.h"
+#import "Support/glu.h"
+#import "Support/OpenGL_Internal.h"
+#import "Support/Texture2D.h"
 
 #import "Layer.h"
 
@@ -29,9 +34,12 @@
 
 
 @interface Director (Private)
+-(BOOL)isOpenGLAttached;
+-(BOOL)initOpenGLViewWithView:(UIView *)view withFrame:(CGRect)rect;
+
+-(void) initGLDefaultValues;
+
 -(void) mainLoop;
--(void) startAnimation;
--(void) stopAnimation;
 -(void) setNextScene;
 // rotates the screen if Landscape mode is activated
 -(void) applyLandscape;
@@ -46,58 +54,59 @@
 @implementation Director
 
 @synthesize animationInterval;
-@synthesize window;
 @synthesize runningScene;
 @synthesize displayFPS, eventsEnabled;
+@synthesize openGLView=_openGLView;
+@synthesize pixelFormat=_pixelFormat;
+@synthesize nextDeltaTimeZero=_nextDeltaTimeZero;
 
 //
 // singleton stuff
 //
-static Director *sharedDirector = nil;
-static int _pixelFormat = RGB565;
+static Director *_sharedDirector = nil;
 
 + (Director *)sharedDirector
 {
-	@synchronized(self)
+	@synchronized([Director class])
 	{
-		if (!sharedDirector)
-			[[Director alloc] init];
+		if (!_sharedDirector)
+			[[self alloc] init];
 		
-		return sharedDirector;
+		return _sharedDirector;
 	}
 	// to avoid compiler warning
 	return nil;
 }
 
+// This function was created to avoid confussion for the users
+// Calling [FastDirector sharedDirector] is enough, but is somewhat
+// confusing since the user needs to understand what's under the hood
++ (void) useFastDirector
+{
+	NSAssert(_sharedDirector==nil, @"A Director was alloced. To use Fast Director this must be the first call to Director");
+	[FastDirector sharedDirector];
+}
+
 +(id)alloc
 {
-	@synchronized(self)
+	@synchronized([Director class])
 	{
-		NSAssert(sharedDirector == nil, @"Attempted to allocate a second instance of a singleton.");
-		sharedDirector = [super alloc];
-		return sharedDirector;
+		NSAssert(_sharedDirector == nil, @"Attempted to allocate a second instance of a singleton.");
+		_sharedDirector = [super alloc];
+		return _sharedDirector;
 	}
 	// to avoid compiler warning
 	return nil;
 }
 
 - (id) init
-{
-	NSString *format;
+{   
 	//Create a full-screen window
-	winSize = [[UIScreen mainScreen] bounds];
-	window = [[UIWindow alloc] initWithFrame:winSize];
 
-	if( _pixelFormat == RGB565 )
-		format = kEAGLColorFormatRGB565;
-	else
-		format = kEAGLColorFormatRGBA8;
-	
-	if( ! (self = [super initWithFrame:[window bounds] pixelFormat:format] ) )
-		return nil;
+	// default values
+	_pixelFormat = kRGB565;
+	_depthBufferFormat = 0;
 
-	[window addSubview:self];
-	
 	// scenes
 	runningScene = nil;
 	nextScene = nil;
@@ -106,12 +115,6 @@ static int _pixelFormat = RGB565;
 	oldAnimationInterval = animationInterval = 1.0 / kDefaultFPS;
 	eventHandlers = [[NSMutableArray arrayWithCapacity:8] retain];
 	
-	[self setAlphaBlending: YES];
-	[self setDepthTest: YES];
-	[self setDefaultProjection];
-
-	// set other opengl default values
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	
 	// landscape
 	landscape = NO;
@@ -119,9 +122,6 @@ static int _pixelFormat = RGB565;
 	// FPS
 	displayFPS = NO;
 	frames = 0;
-#ifdef FAST_FPS_DISPLAY
-	FPSLabel = [[LabelAtlas labelAtlasWithString:@"00.0" charMapFile:@"fps_images.png" itemWidth:16 itemHeight:24 startCharMap:'.'] retain];
-#endif
 	
 	// paused ?
 	paused = NO;
@@ -129,14 +129,12 @@ static int _pixelFormat = RGB565;
 	// touch events enabled ?
 	eventsEnabled = YES;
 	
-	//Show window
-	[window makeKeyAndVisible];	
 	return self;
 }
 
 - (void) dealloc
 {
-	NSLog( @"deallocing %@", self);
+	CCLOG( @"deallocing %@", self);
 
 #ifdef FAST_FPS_DISPLAY
 	[FPSLabel release];
@@ -144,9 +142,25 @@ static int _pixelFormat = RGB565;
 	[eventHandlers release];
 	[runningScene release];
 	[scenes release];
-	[window release];
 	
 	[super dealloc];
+}
+
+-(void) initGLDefaultValues
+{
+	// This method SHOULD be called only after _openGLview was initialized
+	NSAssert( _openGLView, @"_openGLView must be initialized");
+
+	[self setAlphaBlending: YES];
+	[self setDepthTest: YES];
+	[self setDefaultProjection];
+	
+	// set other opengl default values
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	
+#ifdef FAST_FPS_DISPLAY
+	FPSLabel = [[LabelAtlas labelAtlasWithString:@"00.0" charMapFile:@"fps_images.png" itemWidth:16 itemHeight:24 startCharMap:'.'] retain];
+#endif	
 }
 
 //
@@ -154,6 +168,9 @@ static int _pixelFormat = RGB565;
 //
 - (void) mainLoop
 {
+	// dispatch missing events
+    while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, YES) == kCFRunLoopRunHandledSource) {};
+    
 	/* clear window */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
@@ -173,18 +190,13 @@ static int _pixelFormat = RGB565;
 	
 	/* draw the scene */
 	[runningScene visit];
-	
-	glPopMatrix();
-	
-	if( displayFPS ) {
-		glPushMatrix();
-		[self applyLandscape];
+	if( displayFPS )
 		[self showFPS];
+	
 		glPopMatrix();
-	}
 	
 	/* swap buffers */
-	[self swapBuffers];	
+	[_openGLView swapBuffers];	
 }
 
 -(void) calculateDeltaTime
@@ -200,35 +212,22 @@ static int _pixelFormat = RGB565;
 	}
 	
 	// new delta time
-	if( nextDeltaTimeZero ) {
+	if( _nextDeltaTimeZero ) {
 		dt = 0;
-		nextDeltaTimeZero = NO;
+		_nextDeltaTimeZero = NO;
 	} else {
-		dt = (now.tv_sec - lastUpdate.tv_sec) + (now.tv_usec - lastUpdate.tv_usec) / 1000000.0;
+		dt = (now.tv_sec - lastUpdate.tv_sec) + (now.tv_usec - lastUpdate.tv_usec) / 1000000.0f;
 		dt = MAX(0,dt);
 	}
 	
 	lastUpdate = now;	
 }
 
--(void) applicationSignificantTimeChange:(UIApplication *)application
-{
-	nextDeltaTimeZero = YES;
-}
-
 #pragma mark Director Scene iPhone Specific
 
-+(void) setPixelFormat: (int) format
-{
-	if( format != RGB565 && format != RGBA8 ) {
-		NSException* myException = [NSException
-									exceptionWithName:@"DirectorInvalidPixelFormat"
-									reason:@"Invalid Pixel Format for GL view"
-									userInfo:nil];
-		@throw myException;		
-	}
-	
-	if( sharedDirector ) {
+-(void) setPixelFormat: (tPixelFormat) format
+{	
+	if( [self isOpenGLAttached] ) {
 		NSException* myException = [NSException
 									exceptionWithName:@"DirectorAlreadyInitialized"
 									reason:@"Can't change the pixel format after the director was initialized"
@@ -239,6 +238,19 @@ static int _pixelFormat = RGB565;
 	_pixelFormat = format;
 }
 
+-(void) setDepthBufferFormat: (tDepthBufferFormat) format
+{
+	if( [self isOpenGLAttached] ) {
+		NSException* myException = [NSException
+                                  exceptionWithName:@"DirectorAlreadyInitialized"
+                                  reason:@"Can't change the depth buffer format after the director was initialized"
+                                  userInfo:nil];
+		@throw myException;		
+	}
+
+   _depthBufferFormat = format;
+}
+
 #pragma mark Director Scene OpenGL Helper
 
 - (void) setDefaultProjection
@@ -247,37 +259,43 @@ static int _pixelFormat = RGB565;
 	[self set3Dprojection];
 }
 
--(void) set2Dprojection
+-(void)set2Dprojection
 {
-	//Setup OpenGL projection matrix
-//	glViewport(0, 0, winSize.size.width, winSize.size.height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrthof(0, winSize.size.width, 0, winSize.size.height, -1, 1);
-	
+	glOrthof(0, _openGLView.frame.size.width, 0, _openGLView.frame.size.height, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
 
--(void) set3Dprojection
+// set a 3d projection matrix
+-(void)set3Dprojection
 {
-	glViewport(0, 0, winSize.size.width, winSize.size.height);
+	glViewport(0, 0, _openGLView.frame.size.width, _openGLView.frame.size.height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(60, (GLfloat)winSize.size.width/winSize.size.height, 0.5f, 1500.0f);
+	gluPerspective(60, (GLfloat)_openGLView.frame.size.width/_openGLView.frame.size.height, 0.5f, 1500.0f);
 	
 	glMatrixMode(GL_MODELVIEW);	
 	glLoadIdentity();
-	gluLookAt( winSize.size.width/2, winSize.size.height/2, [Camera getZEye],
-			  winSize.size.width/2, winSize.size.height/2, 0,
-			  0.0f, 1.0f, 0.0f
-			  );
+	gluLookAt( _openGLView.frame.size.width/2, _openGLView.frame.size.height/2, [Camera getZEye],
+			  _openGLView.frame.size.width/2, _openGLView.frame.size.height/2, 0,
+			  0.0f, 1.0f, 0.0f);
 }
+
 - (void) setAlphaBlending: (BOOL) on
 {
 	if (on) {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+//		You might want to use this blend function instead
+//		XXX: Some things needs to be fixed
+//		XXX: Particles is setting the default blend function
+//		XXX: to GL_SRC_ALPHA. Modify the blend parameters
+//		XXX: there too
+//		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
 	} else
 		glDisable(GL_BLEND);
 }
@@ -301,43 +319,224 @@ static int _pixelFormat = RGB565;
 		glDisable( GL_DEPTH_TEST );
 }
 
+#pragma mark Director Integration with a UIKit view
+
+// is the view currently attached
+-(BOOL)isOpenGLAttached
+{
+	return ([_openGLView superview]!=nil);
+}
+
+// detach or attach to a view or a window
+-(BOOL)detach
+{
+	// check if the view is attached
+	if(![self isOpenGLAttached])
+	{
+		// the view is not attached
+		NSException* myException = [NSException
+									exceptionWithName:kccException_OpenGLViewNotAttached
+									reason:@"Can't detach the OpenGL View, because it is not attached. Attach it first."
+									userInfo:nil];
+		@throw myException;
+		
+		return NO;
+	}
+	
+	// remove from the superview
+	[_openGLView removeFromSuperview];
+	
+	// check if the view is not attached anymore
+	if(![self isOpenGLAttached])
+	{
+		return YES;
+	}
+	
+	// the view is still attached
+	NSException* myException = [NSException
+								exceptionWithName:kccException_OpenGLViewCantDetach
+								reason:@"Can't detach the OpenGL View, it is still attached to the superview."
+								userInfo:nil];
+	@throw myException;
+	
+	return NO;
+}
+
+-(BOOL)attachInWindow:(UIWindow *)window
+{
+	if([self initOpenGLViewWithView:window withFrame:[window frame]])
+	{
+		return YES;
+	}
+	
+	return NO;
+}
+
+-(BOOL)attachInView:(UIView *)view
+{
+	if([self initOpenGLViewWithView:view withFrame:[view frame]])
+	{
+		return YES;
+	}
+	
+	return NO;
+}
+
+-(BOOL)attachInView:(UIView *)view withFrame:(CGRect)frame
+{
+	if([self initOpenGLViewWithView:view withFrame:frame])
+	{
+		return YES;
+	}
+	
+	return NO;
+}
+
+-(BOOL)initOpenGLViewWithView:(UIView *)view withFrame:(CGRect)rect
+{
+	// check if the view is not attached
+	if([self isOpenGLAttached])
+	{
+		// the view is already attached
+		NSException* myException = [NSException
+									exceptionWithName:kccException_OpenGLViewAlreadyAttached
+									reason:@"Can't re-attach the OpenGL View, because it is already attached. Detach it first."
+									userInfo:nil];
+		@throw myException;
+		
+		return NO;
+	}
+	
+	// check if the view is not initialized
+	if(!_openGLView)
+	{
+		// define the pixel format
+		NSString	*pFormat = kEAGLColorFormatRGB565;
+	    GLuint		depthFormat = 0;
+		
+		if(_pixelFormat==kRGBA8)
+			pFormat = kEAGLColorFormatRGBA8;
+		
+		if(_depthBufferFormat == kDepthBuffer16)
+			depthFormat = GL_DEPTH_COMPONENT16_OES;
+		else if(_depthBufferFormat == kDepthBuffer24)
+			depthFormat = GL_DEPTH_COMPONENT24_OES;
+		
+		// alloc and init the opengl view
+		_openGLView = [[EAGLView alloc] initWithFrame:rect pixelFormat:pFormat depthFormat:depthFormat preserveBackbuffer:NO];
+		
+		// check if the view was alloced and initialized
+		if(!_openGLView)
+		{
+			// the view was not created
+			NSException* myException = [NSException
+										exceptionWithName:kccException_OpenGLViewCantInit
+										reason:@"Could not alloc and init the OpenGL View."
+										userInfo:nil];
+			@throw myException;
+			
+			return NO;
+		}
+		
+		// set autoresizing enabled when attaching the glview to another view
+		[_openGLView setAutoresizesEAGLSurface:YES];
+		
+		// set the touch delegate of the glview to self
+		[_openGLView setTouchDelegate:self];
+	}
+	else
+	{
+		// set the (new) frame of the glview
+		[_openGLView setFrame:rect];
+	}
+	
+	// check if the superview has touchs enabled and enable it in our view
+	if([view isUserInteractionEnabled])
+	{
+		[_openGLView setUserInteractionEnabled:YES];
+		[self setEventsEnabled:YES];
+	}
+	else
+	{
+		[_openGLView setUserInteractionEnabled:NO];
+		[self setEventsEnabled:NO];
+	}
+	
+	// check if multi touches are enabled and set them
+	if([view isMultipleTouchEnabled])
+	{
+		[_openGLView setMultipleTouchEnabled:YES];
+	}
+	else
+	{
+		[_openGLView setMultipleTouchEnabled:NO];
+	}
+	
+	// add the glview to his (new) superview
+	[view addSubview:_openGLView];
+	
+	// set the background color of the glview
+	//	[backgroundColor setOpenGLClearColor];
+	
+	// check if the glview is attached now
+	if([self isOpenGLAttached])
+	{
+		[self initGLDefaultValues];
+		return YES;
+	}
+	
+	// the glview is not attached, but it should have been
+	NSException* myException = [NSException
+								exceptionWithName:kccException_OpenGLViewCantAttach
+								reason:@"Can't attach the OpenGL View."
+								userInfo:nil];
+	@throw myException;
+	
+	return NO;
+}
+
 #pragma mark Director Scene Landscape
 
--(CGPoint) convertCoordinate: (CGPoint) p
+// convert a coordinate from uikit to opengl
+-(CGPoint)convertCoordinate:(CGPoint)p
 {
-	int newY = winSize.size.height - p.y;
+	int newY = _openGLView.frame.size.height - p.y;
 	
 	CGPoint ret = CGPointMake( p.x, newY );
-	if( ! landscape ) {
+	if( ! landscape )
+	{
 		ret = ret;
-	} else {
-	
-	#if LANDSCAPE_LEFT
+	}
+	else 
+	{
+#ifdef LANDSCAPE_LEFT
 		ret.x = p.y;
 		ret.y = p.x;
-	#else
+#else
 		ret.x = p.y;
-		ret.y = winSize.size.width -p.x;
-	#endif // LANDSCAPE_LEFT
+		ret.y = _openGLView.frame.size.width -p.x;
+#endif // LANDSCAPE_LEFT
 	}
-
+	
 	return ret;
 }
 
-- (CGRect) winSize
+// get the current size of the glview
+-(CGSize)winSize
 {
-	CGRect r = winSize;
+	CGSize s = _openGLView.frame.size;
 	if( landscape ) {
 		// swap x,y in landscape mode
-		r.size.width = winSize.size.height;
-		r.size.height = winSize.size.width;
+		s.width = _openGLView.frame.size.height;
+		s.height = _openGLView.frame.size.width;
 	}
-	return r;
+	return s;
 }
 
--(CGRect) displaySize
+// return  the current frame size
+-(CGSize)displaySize
 {
-	return winSize;
+	return _openGLView.frame.size;
 }
 
 - (BOOL) landscape
@@ -350,7 +549,7 @@ static int _pixelFormat = RGB565;
 	if( on != landscape ) {
 		landscape = on;
 		if( landscape )
-#if LANDSCAPE_LEFT
+#ifdef LANDSCAPE_LEFT
 			[[UIApplication sharedApplication] setStatusBarOrientation: UIInterfaceOrientationLandscapeRight animated:NO];
 #else
 			[[UIApplication sharedApplication] setStatusBarOrientation: UIInterfaceOrientationLandscapeLeft animated:NO];
@@ -367,7 +566,7 @@ static int _pixelFormat = RGB565;
 	if( landscape ) {
 		glTranslatef(160,240,0);
 		
-#if LANDSCAPE_LEFT
+#ifdef LANDSCAPE_LEFT
 		glRotatef(-90,0,0,1);
 		glTranslatef(-240,-160,0);
 #else		
@@ -380,9 +579,10 @@ static int _pixelFormat = RGB565;
 
 #pragma mark Director Scene Management
 
-- (void)runScene:(Scene*) scene
+- (void)runWithScene:(Scene*) scene
 {
 	NSAssert( scene != nil, @"Argument must be non-nil");
+	NSAssert( runningScene == nil, @"You can't run an scene if another Scene is running. Use replaceScene or pushScene instead");
 		
 //	[self pushScene: scene];
 	[self replaceScene: scene];
@@ -392,13 +592,14 @@ static int _pixelFormat = RGB565;
 -(void) replaceScene: (Scene*) scene
 {
 	NSAssert( scene != nil, @"Argument must be non-nil");
-	
+
 	nextScene = [scene retain];
 }
 
 - (void) pushScene: (Scene*) scene
 {
 	NSAssert( scene != nil, @"Argument must be non-nil");
+	NSAssert( runningScene != nil, @"A running Scene is needed");
 
 	[scenes addObject: runningScene];
 	nextScene = [scene retain];		// retained twice
@@ -406,6 +607,8 @@ static int _pixelFormat = RGB565;
 
 -(void) popScene
 {	
+	NSAssert( runningScene != nil, @"A running Scene is needed");
+
 	int c = [scenes count];
 	if( c == 0 ) {
 		[self end];
@@ -424,12 +627,21 @@ static int _pixelFormat = RGB565;
 	[runningScene release];
 	runningScene = nil;
 	[self stopAnimation];
-	
-	[eventHandlers release];
-	eventHandlers = nil;
 
-	if( [[UIApplication sharedApplication] respondsToSelector:@selector(terminate)] )
-		[[UIApplication sharedApplication] performSelector:@selector(terminate)];
+	// don't release the event handlers
+	// They are needed in case the director is run again
+//	[eventHandlers release];
+//	eventHandlers = nil;
+
+	[self stopAnimation];
+	[self detach];
+	
+
+	// dont call terminate
+	// an application might want to kill the director
+	// without quiting the application
+//	if( [[UIApplication sharedApplication] respondsToSelector:@selector(terminate)] )
+//		[[UIApplication sharedApplication] performSelector:@selector(terminate)];
 }
 
 -(void) setNextScene
@@ -474,21 +686,6 @@ static int _pixelFormat = RGB565;
 	dt = 0;
 }
 
-/** Hides the Director Window & stops animation */
--(void) hide
-{
-	[self stopAnimation];
-	window.hidden = YES;
-}
-
-/** UnHides the Director Window & starts animation*/
--(void) unhide
-{
-	[self startAnimation];
-	[window makeKeyAndVisible];
-}
-
-
 - (void)startAnimation
 {
 	if( gettimeofday( &lastUpdate, NULL) != 0 ) {
@@ -501,6 +698,14 @@ static int _pixelFormat = RGB565;
 	
 
 	animationTimer = [NSTimer scheduledTimerWithTimeInterval:animationInterval target:self selector:@selector(mainLoop) userInfo:nil repeats:YES];
+
+//
+//	If you want to attach the opengl view into UIScrollView
+//  uncomment this line to prevent 'freezing'.
+//	It doesn't work on with the Fast Director
+//
+//	[[NSRunLoop currentRunLoop] addTimer:animationTimer
+//								 forMode:NSRunLoopCommonModes];
 }
 
 - (void)stopAnimation
@@ -524,7 +729,7 @@ static int _pixelFormat = RGB565;
 -(void) addEventHandler:(CocosNode*) node
 {
 	NSAssert( node != nil, @"Director.AddEventHandler: Node must be non nil");	
-	[eventHandlers addObject:node];
+	[eventHandlers insertObject:node atIndex:0];
 }
 
 -(void) removeEventHandler:(CocosNode*) node
@@ -540,8 +745,7 @@ static int _pixelFormat = RGB565;
 {
 	if( eventsEnabled ) {
 		NSArray *copyArray = [eventHandlers copy];
-		NSEnumerator *enumerator = [copyArray reverseObjectEnumerator];
-		for( id eventHandler in enumerator ) {
+		for( id eventHandler in copyArray ) {
 			if( [eventHandler respondsToSelector:@selector(ccTouchesBegan:withEvent:)] ) {
 				if( [eventHandler ccTouchesBegan:touches withEvent:event] == kEventHandled )
 					break;
@@ -556,8 +760,7 @@ static int _pixelFormat = RGB565;
 {
 	if( eventsEnabled ) {
 		NSArray *copyArray = [eventHandlers copy];
-		NSEnumerator *enumerator = [copyArray reverseObjectEnumerator];
-		for( id eventHandler in enumerator ) {
+		for( id eventHandler in copyArray ) {
 			if( [eventHandler respondsToSelector:@selector(ccTouchesMoved:withEvent:)] ) {
 				if( [eventHandler ccTouchesMoved:touches withEvent:event] == kEventHandled )
 					break;
@@ -571,8 +774,7 @@ static int _pixelFormat = RGB565;
 {
 	if( eventsEnabled ) {
 		NSArray *copyArray = [eventHandlers copy];
-		NSEnumerator *enumerator = [copyArray reverseObjectEnumerator];
-		for( id eventHandler in enumerator ) {
+		for( id eventHandler in copyArray ) {
 			if( [eventHandler respondsToSelector:@selector(ccTouchesEnded:withEvent:)] ) {
 				if( [eventHandler ccTouchesEnded:touches withEvent:event] == kEventHandled )
 					break;
@@ -586,8 +788,7 @@ static int _pixelFormat = RGB565;
 {
 	if( eventsEnabled )  {
 		NSArray *copyArray = [eventHandlers copy];
-		NSEnumerator *enumerator = [copyArray reverseObjectEnumerator];
-		for( id eventHandler in enumerator ) {
+		for( id eventHandler in copyArray ) {
 			if( [eventHandler respondsToSelector:@selector(ccTouchesCancelled:withEvent:)] ) {
 				if( [eventHandler ccTouchesCancelled:touches withEvent:event] == kEventHandled )
 					break;
@@ -648,6 +849,52 @@ static int _pixelFormat = RGB565;
 }
 #endif
 
+@end
 
+#pragma mark Director FastDirector
+
+@implementation FastDirector
+
+- (id) init
+{
+	if(( self = [super init] ))
+		isRunning = NO;
+
+	CCLOG(@"Using Fast Director");
+
+	return self;
+}
+
+- (void) startAnimation
+{
+	if ( gettimeofday( &lastUpdate, NULL) != 0 ) {
+		NSException* myException = [NSException
+									exceptionWithName:@"GetTimeOfDay"
+									reason:@"GetTimeOfDay abnormal error"
+									userInfo:nil];
+		@throw myException;
+	}
+	
+	isRunning = YES;
+	while (isRunning) {
+		if (paused) {
+			usleep(250000); // Sleep for a quarter of a second (250,000 microseconds) so that the framerate is 4 fps.
+		}
+		
+		[self mainLoop];
+		
+		while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, TRUE) == kCFRunLoopRunHandledSource);
+	}
+}
+
+- (void) stopAnimation
+{
+	isRunning = NO;
+}
+
+- (void)setAnimationInterval:(NSTimeInterval)interval
+{
+	NSLog(@"FastDirectory doesn't support setAnimationInterval, yet");
+}
 @end
 

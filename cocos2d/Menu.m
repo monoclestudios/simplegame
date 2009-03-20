@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -51,8 +51,16 @@
 		return nil;
 	
 	// menu in the center of the screen
-	CGRect r = [[Director sharedDirector] winSize];
-	position = cpv( r.size.width/2, r.size.height/2);
+	CGSize s = [[Director sharedDirector] winSize];
+	
+	// XXX: in v0.7, winSize should return the visible size
+	// XXX: so the bar calculation should be done there
+	CGRect r = [[UIApplication sharedApplication] statusBarFrame];
+	if([[Director sharedDirector] landscape])
+		s.height -= r.size.width;
+	else
+	    s.height -= r.size.height;
+	position = cpv(s.width/2, s.height/2);
 
 	isTouchEnabled = YES;
 	selectedItem = -1;
@@ -150,45 +158,28 @@
 #pragma mark Menu - Alignment
 -(void) alignItemsVertically
 {
-	int incY = [[children objectAtIndex:0] contentSize].height + 5;
-	int initialY =  (incY * ([children count]-1))/2;
-	
-	for( MenuItem* item in children ) {
-		[item setPosition:cpv(0,initialY)];
-		initialY -= incY;
-	}
-}
+	int height = -5;
+	for(MenuItem *item in children)
+	    height += [item contentSize].height + 5;
 
-// XXX: deprecated
--(void) alignItemsVerticallyOld
-{
-	int incY = [[children objectAtIndex:0] contentSize].height + 5;
-	int initialY =  (incY * [children count])/2;
-	
-	for( MenuItem* item in children ) {
-		[item setPosition:cpv(0,initialY)];
-		initialY -= incY;
+	float y = height / 2;
+	for(MenuItem *item in children) {
+	    [item setPosition:cpv(0, y - [item contentSize].height / 2)];
+	    y -= [item contentSize].height + 5;
 	}
 }
 
 -(void) alignItemsHorizontally
 {
 	
-	int totalX = 0;
-	BOOL first = YES;
-	for( MenuItem* item in children ) {
-		if( first )
-			first = NO;
-		else
-			totalX += [item contentSize].width + 5;
-	}
+	int width = -5;
+	for(MenuItem* item in children)
+	    width += [item contentSize].width + 5;
 
-	int initialX = totalX / 2;
-	
-	int offsetX = 0;
-	for( MenuItem* item in children ) {
-		[item setPosition:cpv(-initialX+offsetX,0)];
-		offsetX += [item contentSize].width + 5;
+	int x = -width / 2;
+	for(MenuItem* item in children) {
+		[item setPosition:cpv(x + [item contentSize].width / 2, 0)];
+		x += [item contentSize].width + 5;
 	}
 }
 
@@ -212,8 +203,10 @@
 	for( MenuItem* item in children ) {
 		*idx = i;
 		CGRect r = [item rect];
-		r.origin.x += position.x;
-		r.origin.y += position.y;
+		
+		cpVect offset = [self absolutePosition];		
+		r.origin.x += offset.x;
+		r.origin.y += offset.y;
 		if( CGRectContainsPoint( r, point ) )
 			return item;
 		i++;

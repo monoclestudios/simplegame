@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -15,7 +15,9 @@
 
 #import "CocosNode.h"
 #import "Camera.h"
+#import "Grid.h"
 #import "Scheduler.h"
+#import "ccMacros.h"
 
 
 @interface CocosNode (Private)
@@ -28,6 +30,10 @@
 -(void) actionAlloc;
 -(void) childrenAlloc;
 -(void) timerAlloc;
+// helper that reorder a child
+-(void) insertChild:(CocosNode*)child z:(int)z;
+// used internally to alter the zOrder variable. DON'T call this method manually
+-(void) _setZOrder:(int) z;
 @end
 
 @implementation CocosNode
@@ -35,8 +41,9 @@
 @synthesize rotation, scaleX, scaleY, position, parallaxRatioX, parallaxRatioY;
 @synthesize visible;
 @synthesize transformAnchor, relativeTransformAnchor;
-@synthesize parent;
+@synthesize parent, children;
 @synthesize camera;
+@synthesize grid;
 @synthesize zOrder;
 @synthesize tag;
 
@@ -61,6 +68,7 @@
 	parallaxRatioY = 1.0f;
 
 	camera = [[Camera alloc] init];
+	grid = nil;
 	
 	visible = YES;
 
@@ -68,6 +76,8 @@
 	
 	tag = kCocosNodeTagInvalid;
 	
+	zOrder = 0;
+
 	// children (lazy allocs)
 	children = nil;
 
@@ -105,12 +115,14 @@
 
 - (void) dealloc
 {
-#if DEBUG
-	NSLog( @"deallocing %@", self);
-#endif
+	CCLOG( @"deallocing %@", self);
 	
 	// attributes
 	[camera release];
+
+// XXX: Ask Ernesto if this is needed
+//	if ( grid ) grid = nil;
+	[grid release];
 	
 	// children
 	[children makeObjectsPerformSelector:@selector(cleanup)];
@@ -141,20 +153,7 @@
 	if( ! children )
 		[self childrenAlloc];
 
-	child.zOrder=z;
-	
-	int index=0;
-	BOOL added = NO;
-	for( CocosNode *a in children ) {
-		if ( a.zOrder > z ) {
-			added = YES;
-			[ children insertObject:child atIndex:index];
-			break;
-		}
-		index++;
-	}
-	if( ! added )
-		[children addObject:child];
+	[self insertChild:child z:z];
 
 	child.tag = aTag;
 	
@@ -170,20 +169,20 @@
 	NSAssert( child != nil, @"Argument must be non-nil");
 	child.parallaxRatioX = c.x;
 	child.parallaxRatioY = c.y;
-	return [self add: child z:z tag:kCocosNodeTagInvalid];
+	return [self add: child z:z tag:child.tag];
 }
 
 // add a node to the array
 -(id) add: (CocosNode*) child z:(int)z
 {
 	NSAssert( child != nil, @"Argument must be non-nil");
-	return [self add: child z:z tag:kCocosNodeTagInvalid];
+	return [self add: child z:z tag:child.tag];
 }
 
 -(id) add: (CocosNode*) child
 {
 	NSAssert( child != nil, @"Argument must be non-nil");
-	return [self add: child z:0 tag:kCocosNodeTagInvalid];
+	return [self add: child z:child.zOrder tag:child.tag];
 }
 
 -(void) remove: (CocosNode*)child
@@ -288,6 +287,57 @@
 	return nil;
 }
 
+-(cpVect) absolutePosition
+{
+	cpVect ret = position;
+	
+	CocosNode *cn = self;
+	
+	while (cn.parent != nil) {
+		cn = cn.parent;
+		ret = cpvadd( ret,  cn.position );
+	}
+	
+	return ret;
+}
+
+// used internally to alter the zOrder variable. DON'T call this method manually
+-(void) _setZOrder:(int) z
+{
+	zOrder = z;
+}
+
+// helper used by reorderChild & add
+-(void) insertChild:(CocosNode*) child z:(int)z
+{
+	int index=0;
+	BOOL added = NO;
+	for( CocosNode *a in children ) {
+		if ( a.zOrder > z ) {
+			added = YES;
+			[ children insertObject:child atIndex:index];
+			break;
+		}
+		index++;
+	}
+	
+	if( ! added )
+		[children addObject:child];
+
+	[child _setZOrder:z];
+}
+
+-(void) reorderChild:(CocosNode*) child z:(int)z
+{
+	NSAssert( child != nil, @"Child must be non-nil");
+	
+	[child retain];
+	[children removeObject:child];
+
+	[self insertChild:child z:z];
+	
+	[child release];
+}
 
 #pragma mark CocosNode Draw
 
@@ -302,7 +352,10 @@
 		return;
 
 	glPushMatrix();
-	
+
+	if ( grid && grid.active)
+		[grid beforeDraw];
+
 	[self transform];
 
 	for (CocosNode * child in children) {
@@ -318,17 +371,19 @@
 		if ( child.zOrder >= 0 )
 			[child visit];
 	}
-	
-	glPopMatrix();
 
+	if ( grid && grid.active)
+		[grid afterDraw:self.camera];
+
+	glPopMatrix();
 }
 
 #pragma mark CocosNode - Transformations
 
 -(void) transform
 {
-	
-	[camera locate];
+	if ( !(grid && grid.active) )
+		[camera locate];
 	
 	float parallaxOffsetX = 0;
 	float parallaxOffsetY = 0;
@@ -339,6 +394,8 @@
 	}
 	
 	// transformations
+	
+	// transalte
 	if ( relativeTransformAnchor && (transformAnchor.x != 0 || transformAnchor.y != 0 ) )
 		glTranslatef( -transformAnchor.x + parallaxOffsetX, -transformAnchor.y + parallaxOffsetY, 0);
 	
@@ -346,12 +403,14 @@
 		glTranslatef( position.x + transformAnchor.x + parallaxOffsetX, position.y + transformAnchor.y + parallaxOffsetY, 0);
 	else if ( position.x !=0 || position.y !=0 || parallaxOffsetX != 0 || parallaxOffsetY != 0)
 		glTranslatef( position.x + parallaxOffsetX, position.y + parallaxOffsetY, 0 );
-	
-	if (scaleX != 1.0f || scaleY != 1.0f)
-		glScalef( scaleX, scaleY, 1.0f );
-	
+
+	// rotate
 	if (rotation != 0.0f )
 		glRotatef( -rotation, 0.0f, 0.0f, 1.0f );
+	
+	// scale
+	if (scaleX != 1.0f || scaleY != 1.0f)
+		glScalef( scaleX, scaleY, 1.0f );	
 	
 	// restore and re-position point
 	if (transformAnchor.x != 0.0f || transformAnchor.y != 0.0f)
@@ -488,11 +547,18 @@
 	
 	// call all actions
 	for( Action *action in actions ) {
-		[action step: dt];
+        [[action retain] step: dt];
+        if(actions == nil) {
+            [action release];
+            return;
+        }
+        
 		if( [action isDone] ) {
 			[action stop];
 			[actionsToRemove addObject: action];
 		}
+        
+        [action release];
 	}
 }
 
@@ -517,9 +583,7 @@
 		[self timerAlloc];
 
 	if( [scheduledSelectors objectForKey: NSStringFromSelector(selector) ] ) {
-#if DEBUG
-		NSLog(@"CocosNode.schedule: Selector already scheduled: %@",NSStringFromSelector(selector) );
-#endif
+		CCLOG(@"CocosNode.schedule: Selector already scheduled: %@",NSStringFromSelector(selector) );
 		return;
 	}
 
@@ -539,14 +603,13 @@
 	
 	if( ! (timer = [scheduledSelectors objectForKey: NSStringFromSelector(selector)] ) )
 	{
-#if DEBUG
-		NSLog(@"CocosNode.unschedule: Selector not scheduled: %@",NSStringFromSelector(selector) );
-#endif		
+		CCLOG(@"CocosNode.unschedule: Selector not scheduled: %@",NSStringFromSelector(selector) );
 		return;
 	}
 
 	[scheduledSelectors removeObjectForKey: NSStringFromSelector(selector) ];
-	[[Scheduler sharedScheduler] unscheduleTimer:timer];
+	if( isRunning )
+		[[Scheduler sharedScheduler] unscheduleTimer:timer];
 }
 
 - (void) activateTimers

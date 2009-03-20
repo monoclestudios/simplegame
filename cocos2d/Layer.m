@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -28,11 +28,11 @@
 	if( ! (self=[super init]) )
 		return nil;
 	
-	CGRect s = [[Director sharedDirector] winSize];
+	CGSize s = [[Director sharedDirector] winSize];
 	relativeTransformAnchor = NO;
 
-	transformAnchor.x = s.size.width / 2;
-	transformAnchor.y = s.size.height / 2;
+	transformAnchor.x = s.width / 2;
+	transformAnchor.y = s.height / 2;
 	
 	isTouchEnabled = NO;
 	isAccelerometerEnabled = NO;
@@ -102,9 +102,9 @@
 
 - (id) initWithColor: (GLuint) aColor
 {
-	CGRect size = [[Director sharedDirector] winSize];
+	CGSize s = [[Director sharedDirector] winSize];
 	
-	return [self initWithColor: aColor width:size.size.width height:size.size.height];
+	return [self initWithColor: aColor width:s.width height:s.height];
 }
 
 -(void) changeWidth: (GLfloat) w
@@ -131,7 +131,7 @@
 	b = (color>>8) & 0xff;
 	a = (color) & 0xff;
 
-	for( int i=0; i < sizeof(squareColors) / sizeof(squareColors[0]);i++ )
+	for( NSUInteger i=0; i < sizeof(squareColors) / sizeof(squareColors[0]);i++ )
 	{
 		if( i % 4 == 0 )
 			squareColors[i] = r;
@@ -157,7 +157,7 @@
 
 - (void) initWidth: (GLfloat) w height:(GLfloat) h
 {
-	for (int i=0; i<sizeof(squareVertices) / sizeof( squareVertices[0]); i++ )
+	for (NSUInteger i=0; i<sizeof(squareVertices) / sizeof( squareVertices[0]); i++ )
 		squareVertices[i] = 0.0f;
 	
 	squareVertices[2] = w;

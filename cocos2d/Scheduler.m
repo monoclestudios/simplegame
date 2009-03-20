@@ -2,7 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
+ * Copyright (C) 2008,2009 Ricardo Quesada
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -13,6 +13,7 @@
  */
 
 
+#import "ccMacros.h"
 #import "Scheduler.h"
 
 
@@ -68,9 +69,7 @@
 
 -(void) dealloc
 {
-#if DEBUG
-	NSLog( @"deallocing %@", self);
-#endif
+	CCLOG( @"deallocing %@", self);
 	[invocation release];
 	[super dealloc];
 }
@@ -96,7 +95,7 @@ static Scheduler *sharedScheduler;
 
 + (Scheduler *)sharedScheduler
 {
-	@synchronized(self)
+	@synchronized([Scheduler class])
 	{
 		if (!sharedScheduler)
 			[[Scheduler alloc] init];
@@ -109,7 +108,7 @@ static Scheduler *sharedScheduler;
 
 +(id)alloc
 {
-	@synchronized(self)
+	@synchronized([Scheduler class])
 	{
 		NSAssert(sharedScheduler == nil, @"Attempted to allocate a second instance of a singleton.");
 		sharedScheduler = [super alloc];
@@ -133,9 +132,7 @@ static Scheduler *sharedScheduler;
 
 - (void) dealloc
 {
-#if DEBUG
-	NSLog( @"deallocing %@", self);
-#endif	
+	CCLOG( @"deallocing %@", self);
 	[scheduledMethods release];
 	[methodsToRemove release];
 	[methodsToAdd release];
@@ -174,13 +171,14 @@ static Scheduler *sharedScheduler;
 	}
 	
 	if( [scheduledMethods containsObject:t] || [methodsToAdd containsObject:t]) {
-		NSLog(@"Scheduler.schedulerTimer: timer already scheduled");
+		NSLog(@"Scheduler.schedulerTimer: timer %@ already scheduled", t);
 		NSException* myException = [NSException
 									exceptionWithName:@"SchedulerTimerAlreadyScheduled"
 									reason:@"Scheduler.scheduleTimer already scheduled"
 									userInfo:nil];
 		@throw myException;		
 	}
+
 	[methodsToAdd addObject: t];
 }
 

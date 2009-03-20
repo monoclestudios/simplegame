@@ -39,7 +39,7 @@
 }
 -(void)startGame: (id)sender {
     GameScene * gs = [GameScene node];
-    [[Director sharedDirector] runScene:gs];
+    [[Director sharedDirector] replaceScene:gs];
 }
 -(void)help: (id)sender {
     NSLog(@"help");
