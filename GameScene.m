@@ -2,8 +2,8 @@
 //  MenuScene.m
 //  SimpleGame
 //
-//  Created by Will Larson on 11/8/08.
-//  Copyright 2008 __MyCompanyName__. All rights reserved.
+//  http://monoclestudios.com/cocos2d_whitepaper.html
+//  This is free software - see LICENSE for details
 //
 
 #import "GameScene.h"
@@ -16,8 +16,8 @@
     if (self != nil) {
         Sprite * bg = [Sprite spriteWithFile:@"game.png"];
         [bg setPosition:cpv(240, 160)];
-        [self add:bg z:0];
-        [self add:[GameLayer node] z:1];
+        [self addChild:bg z:0];
+        [self addChild:[GameLayer node] z:1];
     }
     return self;
 }

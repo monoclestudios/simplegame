@@ -2,8 +2,8 @@
 //  MenuScene.h
 //  SimpleGame
 //
-//  Created by Will Larson on 11/8/08.
-//  Copyright 2008 __MyCompanyName__. All rights reserved.
+//  http://monoclestudios.com/cocos2d_whitepaper.html
+//  This is free software - see LICENSE for details
 //
 
 #import <UIKit/UIKit.h>

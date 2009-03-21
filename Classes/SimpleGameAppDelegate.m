@@ -2,8 +2,8 @@
 //  SimpleGameAppDelegate.m
 //  SimpleGame
 //
-//  Created by Will Larson on 11/8/08.
-//  Copyright __MyCompanyName__ 2008. All rights reserved.
+//  http://monoclestudios.com/cocos2d_whitepaper.html
+//  This is free software - see LICENSE for details
 //
 
 #import "SimpleGameAppDelegate.h"
