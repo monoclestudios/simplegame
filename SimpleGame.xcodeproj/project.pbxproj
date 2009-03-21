@@ -12,6 +12,9 @@
 		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
 		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		288765FD0DF74451002DB57D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 288765FC0DF74451002DB57D /* CoreGraphics.framework */; };
+		A36B72A70F754B5D0013B314 /* AtlasSprite.m in Sources */ = {isa = PBXBuildFile; fileRef = A36B72A40F754B5D0013B314 /* AtlasSprite.m */; };
+		A36B72A80F754B5D0013B314 /* AtlasSpriteManager.m in Sources */ = {isa = PBXBuildFile; fileRef = A36B72A60F754B5D0013B314 /* AtlasSpriteManager.m */; };
+		A36B72AB0F754B690013B314 /* CocosNodeExtras.m in Sources */ = {isa = PBXBuildFile; fileRef = A36B72AA0F754B690013B314 /* CocosNodeExtras.m */; };
 		A3ADE0580F4FC71500C1396D /* Action.m in Sources */ = {isa = PBXBuildFile; fileRef = A3ADDFB90F4FC71400C1396D /* Action.m */; };
 		A3ADE0590F4FC71600C1396D /* AtlasNode.m in Sources */ = {isa = PBXBuildFile; fileRef = A3ADDFBB0F4FC71400C1396D /* AtlasNode.m */; };
 		A3ADE05A0F4FC71600C1396D /* Camera.m in Sources */ = {isa = PBXBuildFile; fileRef = A3ADDFBD0F4FC71400C1396D /* Camera.m */; };
@@ -100,6 +103,12 @@
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		32CA4F630368D1EE00C91783 /* SimpleGame_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleGame_Prefix.pch; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A36B72A30F754B5D0013B314 /* AtlasSprite.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AtlasSprite.h; sourceTree = "<group>"; };
+		A36B72A40F754B5D0013B314 /* AtlasSprite.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AtlasSprite.m; sourceTree = "<group>"; };
+		A36B72A50F754B5D0013B314 /* AtlasSpriteManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AtlasSpriteManager.h; sourceTree = "<group>"; };
+		A36B72A60F754B5D0013B314 /* AtlasSpriteManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AtlasSpriteManager.m; sourceTree = "<group>"; };
+		A36B72A90F754B690013B314 /* CocosNodeExtras.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CocosNodeExtras.h; sourceTree = "<group>"; };
+		A36B72AA0F754B690013B314 /* CocosNodeExtras.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CocosNodeExtras.m; sourceTree = "<group>"; };
 		A3ADDFB80F4FC71400C1396D /* Action.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Action.h; sourceTree = "<group>"; };
 		A3ADDFB90F4FC71400C1396D /* Action.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Action.m; sourceTree = "<group>"; };
 		A3ADDFBA0F4FC71400C1396D /* AtlasNode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AtlasNode.h; sourceTree = "<group>"; };
@@ -324,6 +333,12 @@
 		A3ADDFB70F4FC71400C1396D /* cocos2d */ = {
 			isa = PBXGroup;
 			children = (
+				A36B72A90F754B690013B314 /* CocosNodeExtras.h */,
+				A36B72AA0F754B690013B314 /* CocosNodeExtras.m */,
+				A36B72A30F754B5D0013B314 /* AtlasSprite.h */,
+				A36B72A40F754B5D0013B314 /* AtlasSprite.m */,
+				A36B72A50F754B5D0013B314 /* AtlasSpriteManager.h */,
+				A36B72A60F754B5D0013B314 /* AtlasSpriteManager.m */,
 				A3ADDFB80F4FC71400C1396D /* Action.h */,
 				A3ADDFB90F4FC71400C1396D /* Action.m */,
 				A3ADDFBA0F4FC71400C1396D /* AtlasNode.h */,
@@ -688,6 +703,9 @@
 				A3ADE0A50F4FC71600C1396D /* CJSONDeserializer.m in Sources */,
 				A3ADE0A60F4FC71600C1396D /* CJSONScanner.m in Sources */,
 				A3ADE0A70F4FC71600C1396D /* CJSONSerializer.m in Sources */,
+				A36B72A70F754B5D0013B314 /* AtlasSprite.m in Sources */,
+				A36B72A80F754B5D0013B314 /* AtlasSpriteManager.m in Sources */,
+				A36B72AB0F754B690013B314 /* CocosNodeExtras.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
