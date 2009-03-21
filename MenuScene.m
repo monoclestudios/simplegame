@@ -33,7 +33,7 @@
         MenuItem *help = [MenuItemFont itemFromString:@"Help" target:self selector:@selector(help:)];
 		Menu *menu = [Menu menuWithItems:start, help, nil];
 		[menu alignItemsVertically];
-        [self add:menu];
+        [self addChild:menu];
     }
     return self;
 }
