@@ -12,12 +12,11 @@
  *
  */
 
-#import <UIKit/UIKit.h>
+#import "CocosNode.h"
+#import "Action.h"
 
 #import "chipmunk.h"
 
-#import <OpenGLES/ES1/gl.h>
-#import "Action.h"
 
 #include <sys/time.h>
 
@@ -257,6 +256,7 @@ Example:
 /** Changes the acceleration of an action
  @deprecated Use EaseIn or EaseOut instead. This Action will be removed in v0.8
  */
+__attribute__((deprecated))
 @interface Accelerate: IntervalAction <NSCopying>
 {
 	IntervalAction *other;
@@ -274,6 +274,7 @@ Example:
 /** Makes an action change the travel speed but retain near normal speed at the beginning and ending.
  @deprecated Use EaseInOut instead. This Action will be removed in v0.8
 */
+__attribute__((deprecated))
 @interface AccelDeccel: IntervalAction <NSCopying>
 {
 	IntervalAction *other;
@@ -283,24 +284,6 @@ Example:
 /** initializes the action */
 -(id) initWithAction: (IntervalAction*) action;
 @end
-
-/** Changes the speed of an action, making it take longer (speed>1)
- or less (speed<1)
- */
-@interface Speed : IntervalAction <NSCopying>
-{
-	ccTime speed;
-	IntervalAction * other;
-}
-/** speed factor. Can be changed in runtime */
-@property (readwrite) ccTime speed;
-
-/** creates the action */
-+(id) actionWithAction: (IntervalAction*) action speed:(ccTime)s;
-/** initializes the action */
--(id) initWithAction: (IntervalAction*) action speed:(ccTime)s;
-@end
-
 
 /** Delays the action a certain amount of seconds
 */
@@ -333,17 +316,17 @@ Example:
 @interface Animate : IntervalAction <NSCopying>
 {
 	Animation *animation;
-	Texture2D *origFrame;
+	id origFrame;
 	BOOL restoreOriginalFrame;
 }
 /** creates the action with an Animation and will restore the original frame when the animation is over */
-+(id) actionWithAnimation:(Animation*) a;
++(id) actionWithAnimation:(id<CocosAnimation>) a;
 /** initializes the action with an Animation and will restore the original frame when the animtion is over */
--(id) initWithAnimation:(Animation*) a;
+-(id) initWithAnimation:(id<CocosAnimation>) a;
 /** creates the action with an Animation */
-+(id) actionWithAnimation:(Animation*) a restoreOriginalFrame:(BOOL)b;
++(id) actionWithAnimation:(id<CocosAnimation>) a restoreOriginalFrame:(BOOL)b;
 /** initializes the action with an Animation */
--(id) initWithAnimation:(Animation*) a restoreOriginalFrame:(BOOL)b;
+-(id) initWithAnimation:(id<CocosAnimation>) a restoreOriginalFrame:(BOOL)b;
 @end
 
 

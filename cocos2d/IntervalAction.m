@@ -324,9 +324,9 @@
 	two = two_;
 
 	if( d1 > d2 )
-		two = [Sequence actions: two_, [DelayTime actionWithDuration: (d1-d2)], nil];
+		two = [Sequence actionOne: two_ two:[DelayTime actionWithDuration: (d1-d2)] ];
 	else if( d1 < d2)
-		one = [Sequence actions: one_, [DelayTime actionWithDuration: (d2-d1)], nil];
+		one = [Sequence actionOne: one_ two: [DelayTime actionWithDuration: (d2-d1)] ];
 	
 	[one retain];
 	[two retain];
@@ -349,17 +349,16 @@
 -(void) start
 {
 	[super start];
-	[target do: one];
-	[target do: two];
+	one.target = target;
+	two.target = target;
+	[one start];
+	[two start];
 }
 
--(BOOL) isDone
-{
-	return [one isDone] && [two isDone];	
-}
 -(void) update: (ccTime) t
 {
-	// ignore. not needed
+	[one update:t];
+	[two update:t];
 }
 
 - (IntervalAction *) reverse
@@ -862,59 +861,6 @@
 }
 @end
 
-//
-// Speed
-//
-@implementation Speed
-@synthesize speed;
-+(id) actionWithAction: (IntervalAction*) action speed:(ccTime) s
-{
-	return [[[self alloc] initWithAction: action speed:s] autorelease ];
-}
-
--(id) initWithAction: (IntervalAction*) action speed:(ccTime) s
-{
-	NSAssert( action!=nil, @"Speed: argument action must be non-nil");
-
-	if( !(self=[super initWithDuration: action.duration / s ]) )
-		return nil;
-	
-	other = [action retain];
-	
-	speed = s;
-	return self;
-}
-
--(id) copyWithZone: (NSZone*) zone
-{
-	Action *copy = [[[self class] allocWithZone:zone] initWithAction:[[other copy] autorelease] speed:speed];
-	return copy;
-}
-
--(void) dealloc
-{
-	[other release];
-	[super dealloc];
-}
-
--(void) start
-{
-	[super start];
-	other.target = target;
-	[other start];
-}
-
--(void) update: (ccTime) t
-{
-	[other update: t];
-}
-
--(IntervalAction*) reverse
-{
-	return [Speed actionWithAction: [other reverse] speed:speed];
-}
-@end
-
 
 //
 // DelayTime
@@ -990,23 +936,23 @@
 //
 @implementation Animate
 
-+(id) actionWithAnimation: (Animation*) a
++(id) actionWithAnimation: (id<CocosAnimation>) a
 {
 	return [[[self alloc] initWithAnimation: a restoreOriginalFrame:YES] autorelease];
 }
 
-+(id) actionWithAnimation: (Animation*) a restoreOriginalFrame:(BOOL)b
++(id) actionWithAnimation: (id<CocosAnimation>) a restoreOriginalFrame:(BOOL)b
 {
 	return [[[self alloc] initWithAnimation: a restoreOriginalFrame:b] autorelease];
 }
 
--(id) initWithAnimation: (Animation*) a
+-(id) initWithAnimation: (id<CocosAnimation>) a
 {
 	NSAssert( a!=nil, @"Animate: argument Animation must be non-nil");
 	return [self initWithAnimation:a restoreOriginalFrame:YES];
 }
 
--(id) initWithAnimation: (Animation*) a restoreOriginalFrame:(BOOL) b
+-(id) initWithAnimation: (id<CocosAnimation>) a restoreOriginalFrame:(BOOL) b
 {
 	NSAssert( a!=nil, @"Animate: argument Animation must be non-nil");
 
@@ -1014,7 +960,7 @@
 		return nil;
 
 	restoreOriginalFrame = b;
-	animation = [a retain];
+	animation = [(NSObject*)a retain];
 	origFrame = nil;
 	return self;
 }
@@ -1034,25 +980,18 @@
 -(void) start
 {
 	[super start];
-	Sprite *s = (Sprite*) target;
+	id<CocosNodeFrames> sprite = (id<CocosNodeFrames>) target;
 
-	[[s texture] retain];
 	[origFrame release];
-	origFrame = [s texture];
+
+	origFrame = [[sprite displayFrame] retain];
 }
 
 -(void) stop
 {
-	
 	if( restoreOriginalFrame ) {
-		Sprite *s = (Sprite*) target;
-
-		// XXX TODO should I retain ?
-		// XXX NO, I should not retain it
-		// TextureNode.texture shall be (retain) property
-		[origFrame retain];
-		[[s texture] release];
-		[s setTexture: origFrame];
+		id<CocosNodeFrames> sprite = (id<CocosNodeFrames>) target;
+		[sprite setDisplayFrame:origFrame];
 	}
 	
 	[super stop];
@@ -1070,15 +1009,9 @@
 	if( idx >= [[animation frames] count] ) {
 		idx = [[animation frames] count] -1;
 	}
-	Sprite *s = (Sprite*) target;
-	if ( s.texture != [[animation frames] objectAtIndex: idx] ) {
-		// XXX TODO should I retain ?
-		// XXX NO, I should not retain it
-		// TextureNode.texture shall be (retain) property
-		id obj = [[animation frames] objectAtIndex:idx];
-		[obj retain];
-		[[s texture] release];
-		[s setTexture: obj];
+	id<CocosNodeFrames> sprite = (id<CocosNodeFrames>) target;
+	if (! [sprite isFrameDisplayed: [[animation frames] objectAtIndex: idx]] ) {
+		[sprite setDisplayFrame: [[animation frames] objectAtIndex:idx]];
 	}
 }
 @end

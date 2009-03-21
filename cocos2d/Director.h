@@ -13,14 +13,13 @@
  */
 
 
-// cocoa related
-#import <UIKit/UIKit.h>
-
 // OpenGL related
 #import "Support/EAGLView.h"
 
 // cocos2d related
 #import "Scene.h"
+
+@protocol TouchEventsDelegate;
 
 enum {
 	kEventHandled = YES,
@@ -225,10 +224,10 @@ and when to execute the Scenes
 
 // Events
 
-/** adds a cocosnode object to the list of multi-touch event queue */
--(void) addEventHandler: (CocosNode*) node;
-/** removes a cocosnode object from the list of multi-touch event queue */
--(void) removeEventHandler: (CocosNode*) node;
+/** adds a delegate to the list of multi-touch handlers */
+-(void) addEventHandler: (id<TouchEventsDelegate>) delegate;
+/** removes a delegate from the list of multi-touch handlers */
+-(void) removeEventHandler: (id<TouchEventsDelegate>) delegate;
 
 // OpenGL Helper
 
@@ -253,6 +252,8 @@ and when to execute the Scenes
 @interface FastDirector : Director
 {
 	BOOL isRunning;
+	
+	NSAutoreleasePool	*autoreleasePool;
 }
 @end
 

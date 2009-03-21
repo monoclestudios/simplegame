@@ -17,7 +17,12 @@
 #import "MenuItem.h"
 #import "Layer.h"
 
-/** A Menu */
+/** A Menu
+ * 
+ * Features and Limitation:
+ *  - You can add MenuItem objects in runtime using addChild:
+ *  - But the only accecpted children are MenuItem objects
+ */
 @interface Menu : Layer <CocosNodeOpacity>
 {
 	int selectedItem;
@@ -35,6 +40,15 @@
 
 /** align items horizontally */
 -(void) alignItemsHorizontally;
+
+/** align items in rows of columns */
+-(void) alignItemsInColumns: (NSNumber *) columns, ... NS_REQUIRES_NIL_TERMINATION;
+-(void) alignItemsInColumns: (NSNumber *) columns vaList: (va_list) args;
+
+/** align items in columns of rows */
+-(void) alignItemsInRows: (NSNumber *) rows, ... NS_REQUIRES_NIL_TERMINATION;
+-(void) alignItemsInRows: (NSNumber *) rows vaList: (va_list) args;
+
 
 @property (readwrite,assign) GLubyte opacity;
 

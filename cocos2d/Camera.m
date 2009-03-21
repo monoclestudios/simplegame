@@ -15,8 +15,9 @@
 
 #import "Director.h"
 #import "Camera.h"
+#import "ccMacros.h"
 
-#import "glu.h"
+#import "Support/glu.h"
 
 @implementation Camera
 
@@ -29,6 +30,18 @@
 
 	[self restore];
 	return self;
+}
+
+- (NSString*) description
+{
+	return [NSString stringWithFormat:@"<%@ = %08X | center = (%.2f,%.2f,%.2f)>", [self class], self, centerX, centerY, centerZ];
+}
+
+
+- (void) dealloc
+{
+	CCLOG(@"deallocing %@", self);
+	[super dealloc];
 }
 
 -(void) restore

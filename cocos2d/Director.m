@@ -169,7 +169,7 @@ static Director *_sharedDirector = nil;
 - (void) mainLoop
 {
 	// dispatch missing events
-    while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, YES) == kCFRunLoopRunHandledSource) {};
+//    while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, YES) == kCFRunLoopRunHandledSource) {};
     
 	/* clear window */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -287,15 +287,7 @@ static Director *_sharedDirector = nil;
 {
 	if (on) {
 		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-//		You might want to use this blend function instead
-//		XXX: Some things needs to be fixed
-//		XXX: Particles is setting the default blend function
-//		XXX: to GL_SRC_ALPHA. Modify the blend parameters
-//		XXX: there too
-//		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
+		glBlendFunc(CC_BLEND_SRC, CC_BLEND_DST);
 	} else
 		glDisable(GL_BLEND);
 }
@@ -688,6 +680,8 @@ static Director *_sharedDirector = nil;
 
 - (void)startAnimation
 {
+	NSAssert( animationTimer == nil, @"animationTimer must be nil. Calling startAnimation twice?");
+
 	if( gettimeofday( &lastUpdate, NULL) != 0 ) {
 		NSException* myException = [NSException
 									exceptionWithName:@"GetTimeOfDay"
@@ -695,6 +689,7 @@ static Director *_sharedDirector = nil;
 									userInfo:nil];
 		@throw myException;
 	}
+	
 	
 
 	animationTimer = [NSTimer scheduledTimerWithTimeInterval:animationInterval target:self selector:@selector(mainLoop) userInfo:nil repeats:YES];
@@ -726,16 +721,16 @@ static Director *_sharedDirector = nil;
 
 #pragma mark Director Events
 
--(void) addEventHandler:(CocosNode*) node
+-(void) addEventHandler:(id<TouchEventsDelegate>) delegate
 {
-	NSAssert( node != nil, @"Director.AddEventHandler: Node must be non nil");	
-	[eventHandlers insertObject:node atIndex:0];
+	NSAssert( delegate != nil, @"Director.addEventHandler: delegate must be non nil");	
+	[eventHandlers insertObject:delegate atIndex:0];
 }
 
--(void) removeEventHandler:(CocosNode*) node
+-(void) removeEventHandler:(id<TouchEventsDelegate>) delegate
 {
-	NSAssert( node != nil, @"Director.removeEventHandler: Node must be non nil");
-	[eventHandlers removeObject:node];
+	NSAssert( delegate != nil, @"Director.removeEventHandler: delegate must be non nil");
+	[eventHandlers removeObject:delegate];
 }
 
 //
@@ -851,22 +846,37 @@ static Director *_sharedDirector = nil;
 
 @end
 
+#pragma mark -
 #pragma mark Director FastDirector
 
 @implementation FastDirector
 
 - (id) init
 {
-	if(( self = [super init] ))
-		isRunning = NO;
-
 	CCLOG(@"Using Fast Director");
+
+	if(( self = [super init] )) {
+		isRunning = NO;
+		
+		// XXX:
+		// XXX: Don't create any autorelease object before calling "fast director"
+		// XXX: else it will be leaked
+		// XXX:
+		autoreleasePool = [NSAutoreleasePool new];
+	}
 
 	return self;
 }
 
 - (void) startAnimation
 {
+	// XXX:
+	// XXX: release autorelease objects created
+	// XXX: between "use fast director" and "runWithScene"
+	// XXX:
+	[autoreleasePool release];
+	autoreleasePool = nil;
+
 	if ( gettimeofday( &lastUpdate, NULL) != 0 ) {
 		NSException* myException = [NSException
 									exceptionWithName:@"GetTimeOfDay"
@@ -875,8 +885,14 @@ static Director *_sharedDirector = nil;
 		@throw myException;
 	}
 	
+
 	isRunning = YES;
 	while (isRunning) {
+	
+		NSAutoreleasePool *loopPool = [NSAutoreleasePool new];
+
+		while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, TRUE) == kCFRunLoopRunHandledSource);
+
 		if (paused) {
 			usleep(250000); // Sleep for a quarter of a second (250,000 microseconds) so that the framerate is 4 fps.
 		}
@@ -884,6 +900,8 @@ static Director *_sharedDirector = nil;
 		[self mainLoop];
 		
 		while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, TRUE) == kCFRunLoopRunHandledSource);
+
+		[loopPool release];
 	}
 }
 

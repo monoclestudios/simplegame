@@ -2,9 +2,7 @@
  *
  * http://code.google.com/p/cocos2d-iphone
  *
- * Copyright (C) 2008 Ricardo Quesada
- *
- * Motion Streak Class by Jason Booth
+ * Copyright (C) 2008, 2009 Jason Booth
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -25,6 +23,7 @@
 
 #import "MotionStreak.h"
 #import "Scheduler.h"
+#import "CocosNodeExtras.h"
 
 @implementation MotionStreak
 
@@ -47,7 +46,7 @@
     mLastLocation = cpvzero;
     mColor = color;
     mRibbon = [Ribbon ribbonWithWidth: mWidth image:mPath length:mTextureLength color:color fade:fade];
-    [self add:mRibbon];
+    [self addChild:mRibbon];
     
     // manually add timer to scheduler
     Timer *timer = [Timer timerWithTarget:self selector:@selector(update:) interval:0];
@@ -58,7 +57,7 @@
 
 -(void)update:(ccTime)delta
 {
-  cpVect location = [self absolutePosition];
+	cpVect location = [self convertToWorldSpace:CGPointZero];
   [mRibbon setPosition:cpv(-1*location.x, -1*location.y)];
   float len = sqrtf(powf(mLastLocation.x - location.x, 2) + powf(mLastLocation.y - location.y, 2));
   if (len > mSegThreshold)
@@ -72,8 +71,6 @@
 
 -(void)dealloc
 {
-  [self remove:mRibbon];
-  [mRibbon release];
   [super dealloc];
 }
 

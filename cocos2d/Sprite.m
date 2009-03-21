@@ -12,15 +12,9 @@
  *
  */
 
-#import <QuartzCore/QuartzCore.h>
-#import <OpenGLES/EAGLDrawable.h>
-#import <UIKit/UIKit.h>
-#import <OpenGLES/EAGL.h>
-#import <OpenGLES/ES1/gl.h>
-#import <OpenGLES/ES1/glext.h>
-
 #import "TextureMgr.h"
 #import "Sprite.h"
+#import "ccMacros.h"
 
 #pragma mark Sprite
 
@@ -32,20 +26,16 @@
 @implementation Sprite
 
 #pragma mark Sprite - image file
-+ (id) spriteWithFile: (NSString*) filename
++ (id) spriteWithFile:(NSString*) filename
 {
 	return [[[self alloc] initWithFile:filename] autorelease];
 }
 
-- (id) initWithFile: (NSString*) filename
+- (id) initWithFile:(NSString*) filename
 {
 	self = [super init];
 	if( self ) {
-		
-		texture = [[[TextureMgr sharedTextureMgr] addImage: filename] retain];
-		
-		CGSize s = texture.contentSize;
-		transformAnchor = cpv( s.width/2, s.height/2);
+		self.texture = [[[TextureMgr sharedTextureMgr] addImage: filename] retain];
 	}
 	
 	return self;
@@ -62,11 +52,7 @@
 {
 	self=[super init];
 	if( self ) {
-		
-		texture = [[[TextureMgr sharedTextureMgr] addPVRTCImage:fileimage bpp:bpp hasAlpha:alpha width:w] retain];
-		
-		CGSize s = texture.contentSize;
-		transformAnchor = cpv( s.width/2, s.height/2);
+		self.texture = [[[TextureMgr sharedTextureMgr] addPVRTCImage:fileimage bpp:bpp hasAlpha:alpha width:w] retain];
 		
 		// lazy alloc
 		animations = nil;
@@ -86,10 +72,7 @@
 {
 	self = [super init];
 	if( self ) {
-		texture = [[[TextureMgr sharedTextureMgr] addCGImage: image] retain];
-		
-		CGSize s = texture.contentSize;
-		transformAnchor = cpv( s.width/2, s.height/2);
+		self.texture = [[[TextureMgr sharedTextureMgr] addCGImage: image] retain];
 		
 		// lazy alloc
 		animations = nil;
@@ -109,16 +92,22 @@
 {
 	self = [super init];
 	if( self ) {
-		texture = [tex retain];
-		
-		CGSize s = texture.contentSize;
-		transformAnchor = cpv( s.width/2, s.height/2);
+		self.texture = [tex retain];
 		
 		// lazy alloc
 		animations = nil;
 	}
 	return self;
 }	
+
+#pragma mark Sprite - TextureNode override
+
+-(void) setTexture: (Texture2D *) aTexture
+{
+	super.texture = aTexture;
+	CGSize s = aTexture.contentSize;
+	self.transformAnchor = cpv(s.width/2, s.height/2);
+}
 
 #pragma mark Sprite
 
@@ -134,20 +123,22 @@
 	animations = [[NSMutableDictionary dictionaryWithCapacity:2] retain];
 }
 
--(void) addAnimation: (Animation*) anim
+//
+// CocosNodeFrames protocol
+//
+-(void) setDisplayFrame:(id)frame
 {
-	// lazy alloc
-	if( ! animations )
-		[self initAnimationDictionary];
-	
-	[animations setObject:anim forKey:[anim name]];
+	if( frame == texture )
+		return;
+	[texture release];
+	texture = [frame retain];	
 }
 
 -(void) setDisplayFrame: (NSString*) animationName index:(int) frameIndex
 {
 	if( ! animations )
 		[self initAnimationDictionary];
-
+	
 	Animation *a = [animations objectForKey: animationName];
 	Texture2D *tex = [[a frames] objectAtIndex:frameIndex];
 	if( tex == texture )
@@ -155,12 +146,40 @@
 	[texture release];
 	texture = [tex retain];
 }
+
+-(BOOL) isFrameDisplayed:(id)frame
+{
+	return texture == frame;
+}
+-(id) displayFrame
+{
+	return texture;
+}
+-(void) addAnimation: (id<CocosAnimation>) anim
+{
+	// lazy alloc
+	if( ! animations )
+		[self initAnimationDictionary];
+	
+	[animations setObject:anim forKey:[anim name]];
+}
+-(id<CocosAnimation>)animationByName: (NSString*) animationName
+{
+	NSAssert( animationName != nil, @"animationName parameter must be non nil");
+    return [animations objectForKey:animationName];
+}
 @end
 
+#pragma mark -
 #pragma mark Animation
 
 @implementation Animation
 @synthesize name, delay, frames;
+
++(id) animationWithName:(NSString*)n delay:(float)d
+{
+	return [[[self alloc] initWithName:n delay:d] autorelease];
+}
 
 -(id) initWithName: (NSString*) n delay:(float)d
 {
@@ -169,6 +188,7 @@
 
 -(void) dealloc
 {
+	CCLOG( @"deallocing %@",self);
 	[name release];
 	[frames release];
 	[super dealloc];
@@ -213,6 +233,10 @@
 
 -(void) addFrame: (NSString*) filename
 {
+	return [self addFrameWithFilename:filename];
+}
+-(void) addFrameWithFilename: (NSString*) filename
+{
 	Texture2D *tex = [[TextureMgr sharedTextureMgr] addImage: filename];
 	[frames addObject:tex];
 }
@@ -230,7 +254,7 @@
 	return s;
 }
 
--(id) initWithName: (NSString*) n delay:(float)d firstTexture:(Texture2D*)tex vaList:(va_list)args
+-(id) initWithName:(NSString*)n delay:(float)d firstTexture:(Texture2D*)tex vaList:(va_list)args
 {
 	self = [super init];
 	if( self ) {
