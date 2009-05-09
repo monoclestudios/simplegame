@@ -3,6 +3,7 @@
  * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
+ * Copyright (C) 2009 Valentin Milea
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -12,12 +13,9 @@
  *
  */
 
-
 #import <OpenGLES/ES1/gl.h>
-#import <UIKit/UIKit.h>
 
 #import "Action.h"
-#import "chipmunk.h"
 #import "cctypes.h"
 
 enum {
@@ -71,7 +69,7 @@ enum {
 	float scaleY;
 	
 	// position of the node
-	cpVect position;
+	CGPoint position;
 	
 	// parallax X factor
 	float parallaxRatioX;
@@ -97,7 +95,7 @@ enum {
 	BOOL relativeTransformAnchor;
 	
 	// transformation anchor point
-	cpVect transformAnchor;
+	CGPoint transformAnchor;
 	
 	// array of children
 	NSMutableArray *children;
@@ -133,7 +131,7 @@ enum {
 /** The Y parallax ratio of the node. 1.0 is the default ratio */
 @property(readwrite,assign) float parallaxRatioX;
 /** Position (x,y) of the node in OpenGL coordinates. (0,0) is the left-bottom corner */
-@property(readwrite,assign) cpVect position;
+@property(readwrite,assign) CGPoint position;
 /** A Camera object that lets you move the node using camera coordinates.
  * If you use the Camera then position, scale & rotation won't be used */
 @property(readonly) Camera* camera;
@@ -142,7 +140,7 @@ enum {
 /** Whether of not the node is visible. Default is YES */
 @property(readwrite,assign) BOOL visible;
 /** The transformation anchor point. For Sprite and Label the transform anchor point is (width/2, height/2) */
-@property(readwrite,assign) cpVect transformAnchor;
+@property(readwrite,assign) CGPoint transformAnchor;
 /** A weak reference to the parent */
 @property(readwrite,assign) CocosNode* parent;
 /** If YES the transformtions will be relative to (-transform.x, -transform.y).
@@ -194,7 +192,7 @@ enum {
  It returns self, so you can chain several addChilds.
  @since v0.7.1
  */
--(id) addChild: (CocosNode*)node z:(int)z parallaxRatio:(cpVect)c;
+-(id) addChild: (CocosNode*)node z:(int)z parallaxRatio:(CGPoint)c;
 
 // composition: ADD (deprecated)
 
@@ -213,7 +211,7 @@ enum {
 /** Adds a child to the container with a z-order and a parallax ratio
  @deprecated Will be removed in v0.8. Use addChild:z:tag:paralalxRatio instead
  */
--(id) add: (CocosNode*)node z:(int)z parallaxRatio:(cpVect)c __attribute__ ((deprecated));
+-(id) add: (CocosNode*)node z:(int)z parallaxRatio:(CGPoint)c __attribute__ ((deprecated));
 
 // composition: REMOVE
 
@@ -280,9 +278,9 @@ enum {
 
 /** Returns the absolute position of the CocosNode
  @deprecated Use convertToWorldSpace:CGPointZero instead. Will be removed in v0.8
- @return a cpVect value
+ @return a CGPoint value
  */
--(cpVect) absolutePosition __attribute__ ((deprecated));
+-(CGPoint) absolutePosition __attribute__ ((deprecated));
 
 /** Reorders a child according to a new z value.
  * The child MUST be already added.
@@ -299,8 +297,15 @@ enum {
 
 // transformations
 
-/** performs opengl view-matrix transformation based on position, scale, rotation and other attributes. */
+/** performs OpenGL view-matrix transformation based on position, scale, rotation and other attributes. */
 -(void) transform;
+
+/** performs OpenGL view-matrix transformation of it's ancestors.
+ Generally the ancestors are already transformed, but in certain cases (eg: attaching a FBO)
+ it's necessary to transform the ancestors again.
+ @since v0.7.2
+ */
+-(void) transformAncestors;
 
 
 // actions
@@ -309,7 +314,9 @@ enum {
  @deprecated Will be removed in v0.8. Use runAction instead
  */
 -(Action*) do: (Action*) action __attribute__ ((deprecated));
-/** Executes an action, and returns the action that is executed
+/** Executes an action, and returns the action that is executed.
+ The target will be retained.
+ @warning in v0.8 the target won't be retained anymore
  @since v0.7.1
  @return An Action pointer
  */
@@ -349,6 +356,41 @@ enum {
 -(void) schedule: (SEL) s interval:(ccTime)seconds;
 /** unschedule a selector */
 -(void) unschedule: (SEL) s;
+
+// transformation methods
+
+/// actual affine transforms used
+/// XXX: needs documentation
+/// @since v0.7.1
+- (CGAffineTransform)nodeToWorldTransform;
+/// XXX: needs documentation
+/// @since v0.7.1
+- (CGAffineTransform)worldToNodeTransform;
+/** converts a world coordinate to local coordinate
+ @since v0.7.1
+ */
+- (CGPoint)convertToNodeSpace:(CGPoint)worldPoint;
+/** converts local coordinate to world space
+ @since v0.7.1
+ */
+- (CGPoint)convertToWorldSpace:(CGPoint)nodePoint;
+/** converts a world coordinate to local coordinate
+ treating the returned/received node point as anchor relative
+ @since v0.7.1
+ */
+- (CGPoint)convertToNodeSpaceAR:(CGPoint)worldPoint;
+/** converts local coordinate to world space
+ treating the returned/received node point as anchor relative
+ @since v0.7.1
+ */
+- (CGPoint)convertToWorldSpaceAR:(CGPoint)nodePoint;
+// convenience methods which take a UITouch instead of CGPoint
+/// XXX: needs documentation
+/// @since v0.7.1
+- (CGPoint)convertTouchToNodeSpace:(UITouch *)touch;
+/// XXX: needs documentation
+/// @since v0.7.1
+- (CGPoint)convertTouchToNodeSpaceAR:(UITouch *)touch;
 @end
 
 //
@@ -356,7 +398,7 @@ enum {
 //
 
 /// CocosNode opacity protocol
-@protocol CocosNodeOpacity
+@protocol CocosNodeOpacity <NSObject>
 /// returns the opacity
 -(GLubyte) opacity;
 /// sets the opacity
@@ -365,14 +407,14 @@ enum {
 
 
 /// Size CocosNode protocol
-@protocol CocosNodeSize
+@protocol CocosNodeSize <NSObject>
 /// returns the size in pixels of the un-tranformted texture.
 -(CGSize) contentSize;
 @end
 
 
 /// Size CocosNode protocol
-@protocol CocosNodeRGB
+@protocol CocosNodeRGB <NSObject>
 /** set the color of the node.
  * example:  [node setRGB: 255:128:24];  or  [node setRGB:0xff:0x88:0x22];
  @since v0.7.1
@@ -389,7 +431,7 @@ enum {
 
 /// Objects that supports the Animation protocol
 /// @since v0.7.1
-@protocol CocosAnimation
+@protocol CocosAnimation <NSObject>
 /** reaonly array with the frames */
 -(NSArray*) frames;
 /** delay of the animations */
@@ -401,7 +443,7 @@ enum {
 
 /// Nodes supports frames protocol
 /// @since v0.7.1
-@protocol CocosNodeFrames
+@protocol CocosNodeFrames <NSObject>
 /** sets a new display frame to the node */
 -(void) setDisplayFrame:(id)newFrame;
 /** changes the display frame based on an animation and an index */
@@ -414,5 +456,10 @@ enum {
 -(id<CocosAnimation>)animationByName: (NSString*) animationName;
 /** adds an Animation to the Sprite */
 -(void) addAnimation: (id<CocosAnimation>) animation;
+/** whether or not the method 'setDisplayFrame' will auto center the frames or not
+ @deprecated Added only to fix issue #281. v0.8 will use relative transformAnchor point.
+ @since v0.7.2
+ */
+-(void) setAutoCenterFrames:(BOOL) autoCenterFrames;
 @end
 

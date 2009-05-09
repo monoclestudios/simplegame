@@ -12,9 +12,10 @@
  *
  */
 
-//
-// cocos (cc) types
-//
+/**
+ @file
+ cocos2d (cc) types
+*/
 
 //! RGB color composed of bytes. 3 chars
 typedef struct _ccRGBB
@@ -47,6 +48,7 @@ typedef struct _ccPointSprite
 	float x;
 	float y;
 	float size;
+	ccColorF colors;
 } ccPointSprite;
 
 //!	A 2D Quad. 8 floats
@@ -87,7 +89,6 @@ ccg(const int x, const int y)
 	ccGridSize v = {x, y};
 	return v;
 }
-
 
 //! delta time type
 //! if you want more resolution redefine it as a double

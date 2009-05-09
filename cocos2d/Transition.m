@@ -23,6 +23,7 @@
 #import "Camera.h"
 #import "TiledGridAction.h"
 #import "EaseAction.h"
+#import "Support/CGPointExtension.h"
 
 enum {
 	kSceneFade = 0xFADEFADE,
@@ -82,6 +83,9 @@ enum {
 	// enable events while transitions
 	[[Director sharedDirector] setEventsEnabled: YES];
 	
+	// issue #267
+	[outScene setVisible:YES];
+
 	[self removeChild:inScene cleanup:NO];
 	[self removeChild:outScene cleanup:NO];
 	
@@ -93,13 +97,13 @@ enum {
 {
 	/* clean up */	
 	[inScene setVisible:YES];
-	[inScene setPosition:cpv(0,0)];
+	[inScene setPosition:ccp(0,0)];
 	[inScene setScale:1.0f];
 	[inScene setRotation:0.0f];
 	[inScene.camera restore];
 	
 	[outScene setVisible:NO];
-	[outScene setPosition:cpv(0,0)];
+	[outScene setPosition:ccp(0,0)];
 	[outScene setScale:1.0f];
 	[outScene setRotation:0.0f];
 	[outScene.camera restore];
@@ -154,8 +158,8 @@ enum {
 	[inScene setScale:0.001f];
 	[outScene setScale:1.0f];
 	
-	[inScene setTransformAnchor: cpv( s.width/2, s.height/2) ];
-	[outScene setTransformAnchor: cpv( s.width/2, s.height/2) ];
+	[inScene setTransformAnchor: ccp( s.width/2, s.height/2) ];
+	[outScene setTransformAnchor: ccp( s.width/2, s.height/2) ];
 	
 	IntervalAction *rotozoom = [Sequence actions: [Spawn actions:
 								   [ScaleBy actionWithDuration:duration/2 scale:0.001f],
@@ -183,12 +187,12 @@ enum {
 	CGSize s = [[Director sharedDirector] winSize];
 	
 	[inScene setScale:0.5f];
-	[inScene setPosition:cpv( s.width,0 )];
+	[inScene setPosition:ccp( s.width,0 )];
 	
-	[inScene setTransformAnchor: cpv( s.width/2, s.height/2) ];
-	[outScene setTransformAnchor: cpv( s.width/2, s.height/2) ];
+	[inScene setTransformAnchor: ccp( s.width/2, s.height/2) ];
+	[outScene setTransformAnchor: ccp( s.width/2, s.height/2) ];
 
-	IntervalAction *jump = [JumpBy actionWithDuration:duration/4 position:cpv(-s.width,0) height:s.width/4 jumps:2];
+	IntervalAction *jump = [JumpBy actionWithDuration:duration/4 position:ccp(-s.width,0) height:s.width/4 jumps:2];
 	IntervalAction *scaleIn = [ScaleTo actionWithDuration:duration/4 scale:1.0f];
 	IntervalAction *scaleOut = [ScaleTo actionWithDuration:duration/4 scale:0.5f];
 	
@@ -225,13 +229,13 @@ enum {
 }
 -(IntervalAction*) action
 {
-	return [MoveTo actionWithDuration:duration position:cpv(0,0)];
+	return [MoveTo actionWithDuration:duration position:ccp(0,0)];
 }
 
 -(void) initScenes
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	[inScene setPosition: cpv( -s.width,0) ];
+	[inScene setPosition: ccp( -s.width,0) ];
 }
 @end
 
@@ -242,7 +246,7 @@ enum {
 -(void) initScenes
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	[inScene setPosition: cpv( s.width,0) ];
+	[inScene setPosition: ccp( s.width,0) ];
 }
 @end
 
@@ -253,7 +257,7 @@ enum {
 -(void) initScenes
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	[inScene setPosition: cpv( 0, s.height) ];
+	[inScene setPosition: ccp( 0, s.height) ];
 }
 @end
 
@@ -264,7 +268,7 @@ enum {
 -(void) initScenes
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	[inScene setPosition: cpv( 0, -s.height) ];
+	[inScene setPosition: ccp( 0, -s.height) ];
 }
 @end
 
@@ -293,13 +297,13 @@ enum {
 -(IntervalAction*) action
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	return [MoveBy actionWithDuration:duration position:cpv(s.width,0)];
+	return [MoveBy actionWithDuration:duration position:ccp(s.width,0)];
 }
 
 -(void) initScenes
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	[inScene setPosition: cpv( -s.width,0) ];
+	[inScene setPosition: ccp( -s.width,0) ];
 }
 @end
 
@@ -310,13 +314,13 @@ enum {
 -(void) initScenes
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	[inScene setPosition: cpv( s.width,0) ];
+	[inScene setPosition: ccp( s.width,0) ];
 }
 
 -(IntervalAction*) action
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	return [MoveBy actionWithDuration:duration position:cpv(-s.width,0)];
+	return [MoveBy actionWithDuration:duration position:ccp(-s.width,0)];
 }
 
 @end
@@ -328,13 +332,13 @@ enum {
 -(void) initScenes
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	[inScene setPosition: cpv(0,s.height) ];
+	[inScene setPosition: ccp(0,s.height) ];
 }
 
 -(IntervalAction*) action
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	return [MoveBy actionWithDuration:duration position:cpv(0,-s.height)];
+	return [MoveBy actionWithDuration:duration position:ccp(0,-s.height)];
 }
 
 @end
@@ -346,13 +350,13 @@ enum {
 -(void) initScenes
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	[inScene setPosition: cpv(0,-s.height) ];
+	[inScene setPosition: ccp(0,-s.height) ];
 }
 
 -(IntervalAction*) action
 {
 	CGSize s = [[Director sharedDirector] winSize];
-	return [MoveBy actionWithDuration:duration position:cpv(0,s.height)];
+	return [MoveBy actionWithDuration:duration position:ccp(0,s.height)];
 }
 @end
 
@@ -369,8 +373,8 @@ enum {
 	[inScene setScale:0.001f];
 	[outScene setScale:1.0f];
 	
-	[inScene setTransformAnchor:cpv(2*s.width/3,s.height/2) ];
-	[outScene setTransformAnchor:cpv(s.width/3,s.height/2) ];
+	[inScene setTransformAnchor:ccp(2*s.width/3,s.height/2) ];
+	[outScene setTransformAnchor:ccp(s.width/3,s.height/2) ];
 	
 	
 	IntervalAction *scaleOut = [ScaleTo actionWithDuration:duration scale:0.01f];

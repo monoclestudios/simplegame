@@ -15,6 +15,7 @@
 #import "TextureMgr.h"
 #import "Sprite.h"
 #import "ccMacros.h"
+#import "Support/CGPointExtension.h"
 
 #pragma mark Sprite
 
@@ -24,6 +25,8 @@
 @end
 
 @implementation Sprite
+
+@synthesize autoCenterFrames = _autoCenterFrames;
 
 #pragma mark Sprite - image file
 + (id) spriteWithFile:(NSString*) filename
@@ -35,7 +38,15 @@
 {
 	self = [super init];
 	if( self ) {
-		self.texture = [[[TextureMgr sharedTextureMgr] addImage: filename] retain];
+		// texture is retained
+		self.texture = [[TextureMgr sharedTextureMgr] addImage: filename];
+		
+		CGSize s = self.texture.contentSize;
+		transformAnchor = ccp(s.width/2, s.height/2);
+		_autoCenterFrames = NO;
+		
+		// lazy alloc
+		animations = nil;
 	}
 	
 	return self;
@@ -50,10 +61,14 @@
 
 - (id) initWithPVRTCFile: (NSString*) fileimage bpp:(int)bpp hasAlpha:(BOOL)alpha width:(int)w
 {
-	self=[super init];
-	if( self ) {
-		self.texture = [[[TextureMgr sharedTextureMgr] addPVRTCImage:fileimage bpp:bpp hasAlpha:alpha width:w] retain];
+	if((self=[super init])) {
+		// texture is retained
+		self.texture = [[TextureMgr sharedTextureMgr] addPVRTCImage:fileimage bpp:bpp hasAlpha:alpha width:w];
 		
+		CGSize s = self.texture.contentSize;
+		transformAnchor = ccp(s.width/2, s.height/2);
+		_autoCenterFrames = NO;
+
 		// lazy alloc
 		animations = nil;
 	}
@@ -72,8 +87,13 @@
 {
 	self = [super init];
 	if( self ) {
-		self.texture = [[[TextureMgr sharedTextureMgr] addCGImage: image] retain];
+		// texture is retained
+		self.texture = [[TextureMgr sharedTextureMgr] addCGImage: image];
 		
+		CGSize s = self.texture.contentSize;
+		transformAnchor = ccp(s.width/2, s.height/2);
+		_autoCenterFrames = NO;
+
 		// lazy alloc
 		animations = nil;
 	}
@@ -90,9 +110,13 @@
 
 - (id) initWithTexture:(Texture2D*) tex
 {
-	self = [super init];
-	if( self ) {
-		self.texture = [tex retain];
+	if( (self = [super init]) ) {
+		// texture is retained
+		self.texture = tex;
+		
+		CGSize s = self.texture.contentSize;
+		transformAnchor = ccp(s.width/2, s.height/2);
+		_autoCenterFrames = NO;
 		
 		// lazy alloc
 		animations = nil;
@@ -105,15 +129,12 @@
 -(void) setTexture: (Texture2D *) aTexture
 {
 	super.texture = aTexture;
-	CGSize s = aTexture.contentSize;
-	self.transformAnchor = cpv(s.width/2, s.height/2);
 }
 
 #pragma mark Sprite
 
 -(void) dealloc
 {
-	[texture release];
 	[animations release];
 	[super dealloc];
 }
@@ -128,10 +149,12 @@
 //
 -(void) setDisplayFrame:(id)frame
 {
-	if( frame == texture )
-		return;
-	[texture release];
-	texture = [frame retain];	
+	self.texture = frame;
+	
+	if( _autoCenterFrames ) {
+		CGSize s = self.texture.contentSize;
+		self.transformAnchor = ccp(s.width/2, s.height/2);
+	}
 }
 
 -(void) setDisplayFrame: (NSString*) animationName index:(int) frameIndex
@@ -140,11 +163,13 @@
 		[self initAnimationDictionary];
 	
 	Animation *a = [animations objectForKey: animationName];
-	Texture2D *tex = [[a frames] objectAtIndex:frameIndex];
-	if( tex == texture )
-		return;
-	[texture release];
-	texture = [tex retain];
+	Texture2D *frame = [[a frames] objectAtIndex:frameIndex];
+	self.texture = frame;
+	
+	if( _autoCenterFrames ) {
+		CGSize s = self.texture.contentSize;
+		self.transformAnchor = ccp(s.width/2, s.height/2);
+	}	
 }
 
 -(BOOL) isFrameDisplayed:(id)frame

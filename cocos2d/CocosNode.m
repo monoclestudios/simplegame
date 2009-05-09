@@ -3,6 +3,7 @@
  * http://code.google.com/p/cocos2d-iphone
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
+ * Copyright (C) 2009 Valentin Milea
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the 'cocos2d for iPhone' license.
@@ -18,7 +19,14 @@
 #import "Grid.h"
 #import "Scheduler.h"
 #import "ccMacros.h"
+#import "Director.h"
+#import "Support/CGPointExtension.h"
 
+#if 1
+#define RENDER_IN_SUBPIXEL
+#else
+#define RENDER_IN_SUBPIXEL (int)
+#endif
 
 @interface CocosNode (Private)
 -(void) step_: (ccTime) dt;
@@ -59,7 +67,7 @@
 	
 	isRunning = NO;
 	
-	position = cpvzero;
+	position = CGPointZero;
 	
 	rotation = 0.0f;		// 0 degrees	
 	scaleX = 1.0f;			// scale factor
@@ -71,7 +79,7 @@
 	
 	visible = YES;
 
-	transformAnchor = cpvzero;
+	transformAnchor = CGPointZero;
 	
 	tag = kCocosNodeTagInvalid;
 	
@@ -132,7 +140,12 @@
 	[grid release];
 	
 	// children
-	[children makeObjectsPerformSelector:@selector(cleanup)];
+	
+	for (CocosNode *child in children) {
+		child.parent = nil;
+		[child cleanup];
+	}
+	
 	[children release];
 	
 	// timers
@@ -167,7 +180,7 @@
 	CCLOG(@"add:z:tag: is deprecated. Use addChild:z:tag:");
 	return [self addChild:child z:z tag:aTag];
 }
-/* Add logic MUST only be on this selector
+/* "add" logic MUST only be on this selector
  * If a class want's to extend the 'addChild' behaviour it only needs
  * to override this selector
  */
@@ -190,12 +203,12 @@
 	return self;
 }
 
--(id) add: (CocosNode*) child z:(int)z parallaxRatio:(cpVect)c
+-(id) add: (CocosNode*) child z:(int)z parallaxRatio:(CGPoint)c
 {
 	CCLOG(@"add:z:tag:parallaxRatio: is deprecated. Use addChild:z:parallaxRatio:");
 	return [self addChild:child z:z parallaxRatio:c];
 }
--(id) addChild: (CocosNode*) child z:(int)z parallaxRatio:(cpVect)c
+-(id) addChild: (CocosNode*) child z:(int)z parallaxRatio:(CGPoint)c
 {
 	NSAssert( child != nil, @"Argument must be non-nil");
 	child.parallaxRatioX = c.x;
@@ -237,7 +250,7 @@
 	CCLOG(@"removeAndStop: is deprecated. Use removeChild:cleanup:");
 	return [self removeChild:child cleanup:YES];
 }
-/* Remove logic MUST only be on this selector
+/* "remove" logic MUST only be on this selector
  * If a class want's to extend the 'removeChild' behaviour it only needs
  * to override this selector
  */
@@ -274,7 +287,6 @@
 }
 
 -(void) removeAll
-
 {
 	CCLOG(@"removeAll is deprecated. Use removeAllChildrenWithCleanup:");
 	return [self removeAllChildrenWithCleanup:NO];
@@ -316,15 +328,15 @@
 	return nil;
 }
 
--(cpVect) absolutePosition
+-(CGPoint) absolutePosition
 {
-	cpVect ret = position;
+	CGPoint ret = position;
 	
 	CocosNode *cn = self;
 	
 	while (cn.parent != nil) {
 		cn = cn.parent;
-		ret = cpvadd( ret,  cn.position );
+		ret = ccpAdd( ret,  cn.position );
 	}
 	
 	return ret;
@@ -389,6 +401,8 @@
 -(void) draw
 {
 	// override me
+	// Only use this function to draw your staff.
+	// DON'T draw your stuff outside this method
 }
 
 -(void) visit
@@ -398,8 +412,10 @@
 	
 	glPushMatrix();
 	
-	if ( grid && grid.active)
+	if ( grid && grid.active) {
 		[grid beforeDraw];
+		[self transformAncestors];
+	}
 	
 	[self transform];
 	
@@ -425,6 +441,14 @@
 
 #pragma mark CocosNode - Transformations
 
+-(void) transformAncestors
+{
+	if( self.parent ) {
+		[self.parent transformAncestors];
+		[self.parent transform];
+	}
+}
+
 -(void) transform
 {
 	if ( !(grid && grid.active) )
@@ -433,7 +457,7 @@
 	float parallaxOffsetX = 0;
 	float parallaxOffsetY = 0;
 	
-	// XXX: Parallax code should be moved to a ParallaxNode node
+	// XXX: In v0.8 parallax code will be moved to a ParallaxNode node
 	if( (parallaxRatioX != 1.0f || parallaxRatioY != 1.0) && parent ) {
 		parallaxOffsetX = -parent.position.x + parent.position.x * parallaxRatioX;
 		parallaxOffsetY = -parent.position.y + parent.position.y * parallaxRatioY;		
@@ -443,12 +467,12 @@
 	
 	// transalte
 	if ( relativeTransformAnchor && (transformAnchor.x != 0 || transformAnchor.y != 0 ) )
-		glTranslatef( -transformAnchor.x + parallaxOffsetX, -transformAnchor.y + parallaxOffsetY, 0);
+		glTranslatef( RENDER_IN_SUBPIXEL(-transformAnchor.x + parallaxOffsetX), RENDER_IN_SUBPIXEL(-transformAnchor.y + parallaxOffsetY), 0);
 	
 	if (transformAnchor.x != 0 || transformAnchor.y != 0 )
-		glTranslatef( position.x + transformAnchor.x + parallaxOffsetX, position.y + transformAnchor.y + parallaxOffsetY, 0);
+		glTranslatef( RENDER_IN_SUBPIXEL(position.x + transformAnchor.x + parallaxOffsetX), RENDER_IN_SUBPIXEL(position.y + transformAnchor.y + parallaxOffsetY), 0);
 	else if ( position.x !=0 || position.y !=0 || parallaxOffsetX != 0 || parallaxOffsetY != 0)
-		glTranslatef( position.x + parallaxOffsetX, position.y + parallaxOffsetY, 0 );
+		glTranslatef( RENDER_IN_SUBPIXEL(position.x + parallaxOffsetX), RENDER_IN_SUBPIXEL(position.y + parallaxOffsetY), 0 );
 	
 	// rotate
 	if (rotation != 0.0f )
@@ -460,7 +484,7 @@
 	
 	// restore and re-position point
 	if (transformAnchor.x != 0.0f || transformAnchor.y != 0.0f)
-		glTranslatef(-transformAnchor.x + parallaxOffsetX, -transformAnchor.y + parallaxOffsetY, 0);
+		glTranslatef(RENDER_IN_SUBPIXEL(-transformAnchor.x + parallaxOffsetX), RENDER_IN_SUBPIXEL(-transformAnchor.y + parallaxOffsetY), 0);
 }
 
 -(float) scale
@@ -498,24 +522,22 @@
 
 -(void) onEnter
 {
-	isRunning = YES;
-	
-	
 	for( id child in children )
 		[child onEnter];
 	
 	[self activateTimers];
+
+	isRunning = YES;
 }
 
 -(void) onExit
 {
-	isRunning = NO;
-	
 	[self deactivateTimers];
+
+	isRunning = NO;	
 	
 	for( id child in children )
 		[child onExit];
-	
 }
 
 #pragma mark CocosNode Actions
@@ -549,11 +571,15 @@
 {
 	NSAssert( action != nil, @"Argument must be non-nil");
 	
-#ifdef DEBUG
-	if ( [actions containsObject:action] || [actionsToAdd containsObject:action] ) {
-		CCLOG(@"WARNING: action already scheduled.");
+	NSAssert( ![actionsToAdd containsObject:action], @"Action already sheduled to run");
+	
+	if ( [actions containsObject:action] ) {
+		NSAssert( [actionsToRemove containsObject:action], @"Action already running");
+		[actionsToRemove removeObject:action];
+		
+		CCLOG(@"runAction: Action saved from removal");
+		return action;
 	}
-#endif
 	
 	action.target = self;
 	[action start];
@@ -578,35 +604,23 @@
 
 -(void) stopAction: (Action*) action
 {
-	if( [actionsToRemove containsObject:action] )
-		CCLOG(@"stopAction: action already scheduled for removal!");
-
-	else if( [actions containsObject:action] )
-		[actionsToRemove addObject:action];
-	
-	else if( [actionsToAdd containsObject:action] )
+	if( [actionsToAdd containsObject:action] )
 		[actionsToAdd removeObject:action];
+	
+	else if( [actions containsObject:action] ) {
+		if( ![actionsToRemove containsObject:action] )
+			[actionsToRemove addObject:action];
+		else
+			CCLOG(@"stopAction: Action already scheduled for removal!");
+	}
 	else
-		CCLOG(@"stopAction: action not found!");
+		CCLOG(@"stopAction: Action not found!");
 }
 
 -(void) stopActionByTag:(int) aTag
 {
 	NSAssert( aTag != kActionTagInvalid, @"Invalid tag");
 	
-	for( Action *a in actionsToRemove ) {
-		if( a.tag == aTag ) {
-			CCLOG(@"stopActionByTag: action already scheduled for removal!");
-			return; 
-		}
-	}
-	// is running ?
-	for( Action *a in actions ) {
-		if( a.tag == aTag ) {
-			[actionsToRemove addObject:a];
-			return; 
-		}
-	}
 	// is going to be added ?
 	for( Action *a in actionsToAdd ) {
 		if( a.tag == aTag ) {
@@ -614,7 +628,15 @@
 			return;
 		}
 	}
-	CCLOG(@"stopActionByTag: action not found!");
+	// is running ?
+	for( Action *a in actions ) {
+		if( a.tag == aTag && ![actionsToRemove containsObject:a] ) {
+			[actionsToRemove addObject:a];
+			return; 
+		}
+	}
+	
+	CCLOG(@"stopActionByTag: Action not running or already scheduled for removal!");
 }
 
 -(Action*) getActionByTag:(int) aTag
@@ -623,7 +645,7 @@
 	
 	for( Action *a in actionsToRemove ) {
 		if( a.tag == aTag ) {
-			CCLOG(@"getActionByTag: action unavailable, scheduled for removal!");
+			CCLOG(@"getActionByTag: Action unavailable, scheduled for removal!");
 			return nil; 
 		}
 	}
@@ -639,7 +661,7 @@
 			return a;
 	}
 
-	CCLOG(@"getActionByTag: action not found");
+	CCLOG(@"getActionByTag: Action not found");
 	return nil;
 }
 
@@ -681,8 +703,8 @@
 	// b. Retain actions array before loop, release it after loop. Only 1 retain,
 	//    slightly better performance when there are many actions. Need to keep original
 	//    value because actions might get nullified and you don't want [nil release].
-	
-	[actions retain];
+
+	id actionsBackup = [actions retain];
 	
 	// call all actions
 	for( Action *action in actions ) {
@@ -699,7 +721,7 @@
 		}
 	}
 	
-	[actions release];
+	[actionsBackup release];
 }
 
 #pragma mark CocosNode Timers 
@@ -764,5 +786,75 @@
 {
 	for( id key in scheduledSelectors )
 		[[Scheduler sharedScheduler] unscheduleTimer: [scheduledSelectors objectForKey:key]];
+}
+
+
+#pragma mark CocosNode Transform
+
+- (CGAffineTransform)nodeToWorldTransform
+{
+	CGAffineTransform t = CGAffineTransformIdentity;
+	
+	if (parent != nil) {
+		t = [parent nodeToWorldTransform];
+	}
+	
+	if (!relativeTransformAnchor) {
+		t = CGAffineTransformTranslate(t, transformAnchor.x, transformAnchor.y);
+	}
+	
+	t = CGAffineTransformTranslate(t, position.x, position.y);
+	t = CGAffineTransformRotate(t, -CC_DEGREES_TO_RADIANS(rotation));
+	t = CGAffineTransformScale(t, scaleX, scaleY);
+	
+	t = CGAffineTransformTranslate(t, -transformAnchor.x, -transformAnchor.y);
+	
+	return t;
+}
+
+- (CGAffineTransform)worldToNodeTransform
+{
+	return CGAffineTransformInvert([self nodeToWorldTransform]);
+}
+
+- (CGPoint)convertToNodeSpace:(CGPoint)worldPoint
+{
+	return CGPointApplyAffineTransform(worldPoint, [self worldToNodeTransform]);
+}
+
+- (CGPoint)convertToWorldSpace:(CGPoint)nodePoint
+{
+	return CGPointApplyAffineTransform(nodePoint, [self nodeToWorldTransform]);
+}
+
+- (CGPoint)convertToNodeSpaceAR:(CGPoint)worldPoint
+{
+	CGPoint nodePoint = [self convertToNodeSpace:worldPoint];
+	nodePoint.x -= transformAnchor.x;
+	nodePoint.y -= transformAnchor.y;
+	return nodePoint;
+}
+
+- (CGPoint)convertToWorldSpaceAR:(CGPoint)nodePoint
+{
+	nodePoint.x += transformAnchor.x;
+	nodePoint.y += transformAnchor.y;
+	return [self convertToWorldSpace:nodePoint];
+}
+
+// convenience methods which take a UITouch instead of CGPoint
+
+- (CGPoint)convertTouchToNodeSpace:(UITouch *)touch
+{
+	CGPoint point = [touch locationInView: [touch view]];
+	point = [[Director sharedDirector] convertCoordinate: point];
+	return [self convertToNodeSpace:point];
+}
+
+- (CGPoint)convertTouchToNodeSpaceAR:(UITouch *)touch
+{
+	CGPoint point = [touch locationInView: [touch view]];
+	point = [[Director sharedDirector] convertCoordinate: point];
+	return [self convertToNodeSpaceAR:point];
 }
 @end

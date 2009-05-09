@@ -16,6 +16,7 @@
 #import "IntervalAction.h"
 #import "Sprite.h"
 #import "CocosNode.h"
+#import "Support/CGPointExtension.h"
 
 //
 // IntervalAction
@@ -455,12 +456,12 @@
 // MoveTo
 //
 @implementation MoveTo
-+(id) actionWithDuration: (ccTime) t position: (cpVect) p
++(id) actionWithDuration: (ccTime) t position: (CGPoint) p
 {	
 	return [[[self alloc] initWithDuration:t position:p ] autorelease];
 }
 
--(id) initWithDuration: (ccTime) t position: (cpVect) p
+-(id) initWithDuration: (ccTime) t position: (CGPoint) p
 {
 	if( !(self=[super initWithDuration: t]) )
 		return nil;
@@ -479,12 +480,12 @@
 {
 	[super start];
 	startPosition = [target position];
-	delta = cpvsub( endPosition, startPosition );
+	delta = ccpSub( endPosition, startPosition );
 }
 
 -(void) update: (ccTime) t
 {	
-	target.position = cpv( (startPosition.x + delta.x * t ), (startPosition.y + delta.y * t ) );
+	target.position = ccp( (startPosition.x + delta.x * t ), (startPosition.y + delta.y * t ) );
 }
 @end
 
@@ -492,12 +493,12 @@
 // MoveBy
 //
 @implementation MoveBy
-+(id) actionWithDuration: (ccTime) t position: (cpVect) p
++(id) actionWithDuration: (ccTime) t position: (CGPoint) p
 {	
 	return [[[self alloc] initWithDuration:t position:p ] autorelease];
 }
 
--(id) initWithDuration: (ccTime) t position: (cpVect) p
+-(id) initWithDuration: (ccTime) t position: (CGPoint) p
 {
 	if( !(self=[super initWithDuration: t]) )
 		return nil;
@@ -514,14 +515,14 @@
 
 -(void) start
 {
-	cpVect dTmp = delta;
+	CGPoint dTmp = delta;
 	[super start];
 	delta = dTmp;
 }
 
 -(IntervalAction*) reverse
 {
-	return [MoveBy actionWithDuration: duration position: cpv( -delta.x, -delta.y)];
+	return [MoveBy actionWithDuration: duration position: ccp( -delta.x, -delta.y)];
 }
 @end
 
@@ -529,12 +530,12 @@
 // JumpBy
 //
 @implementation JumpBy
-+(id) actionWithDuration: (ccTime) t position: (cpVect) pos height: (ccTime) h jumps:(int)j
++(id) actionWithDuration: (ccTime) t position: (CGPoint) pos height: (ccTime) h jumps:(int)j
 {
 	return [[[self alloc] initWithDuration: t position: pos height: h jumps:j] autorelease];
 }
 
--(id) initWithDuration: (ccTime) t position: (cpVect) pos height: (ccTime) h jumps:(int)j
+-(id) initWithDuration: (ccTime) t position: (CGPoint) pos height: (ccTime) h jumps:(int)j
 {
 	if( !(self=[super initWithDuration:t]) )
 		return nil;
@@ -559,15 +560,15 @@
 
 -(void) update: (ccTime) t
 {
-	ccTime y = height * fabsf( sinf(t * (cpFloat)M_PI * jumps ) );
+	ccTime y = height * fabsf( sinf(t * (CGFloat)M_PI * jumps ) );
 	y += delta.y * t;
 	ccTime x = delta.x * t;
-	target.position = cpv( startPosition.x + x, startPosition.y + y );
+	target.position = ccp( startPosition.x + x, startPosition.y + y );
 }
 
 -(IntervalAction*) reverse
 {
-	return [JumpBy actionWithDuration: duration position: cpv(-delta.x,-delta.y) height: height jumps:jumps];
+	return [JumpBy actionWithDuration: duration position: ccp(-delta.x,-delta.y) height: height jumps:jumps];
 }
 @end
 
@@ -578,7 +579,7 @@
 -(void) start
 {
 	[super start];
-	delta = cpv( delta.x - startPosition.x, delta.y - startPosition.y );
+	delta = ccp( delta.x - startPosition.x, delta.y - startPosition.y );
 }
 @end
 
@@ -618,7 +619,7 @@
 
 -(id) copyWithZone: (NSZone*) zone
 {
-	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] scaleX: endScaleX scaleY:endScaleY];
+	Action *copy = [[[self class] allocWithZone: zone] initWithDuration: [self duration] scaleX:endScaleX scaleY:endScaleY];
 	return copy;
 }
 
@@ -659,12 +660,12 @@
 // Blink
 //
 @implementation Blink
-+(id) actionWithDuration: (ccTime) t blinks: (int) b
++(id) actionWithDuration: (ccTime) t blinks: (unsigned int) b
 {
 	return [[[ self alloc] initWithDuration: t blinks: b] autorelease];
 }
 
--(id) initWithDuration: (ccTime) t blinks: (int) b
+-(id) initWithDuration: (ccTime) t blinks: (unsigned int) b
 {
 	if( ! (self=[super initWithDuration: t] ) )
 		return nil;
@@ -731,9 +732,8 @@
 
 -(id) initWithDuration: (ccTime) t opacity: (GLubyte) o
 {
-	if( ! (self=[super initWithDuration: t] ) )
-		return nil;
-	toOpacity = o;
+	if( (self=[super initWithDuration: t] ) )
+		toOpacity = o;
 	return self;
 }
 
@@ -756,8 +756,99 @@
 @end
 
 //
+// TintTo
+//
+#pragma mark TintTo
+@implementation TintTo
++(id) actionWithDuration:(ccTime)t red:(GLubyte)r green:(GLubyte)g blue:(GLubyte)b
+{
+	return [[(TintTo*)[ self alloc] initWithDuration:t red:r green:g blue:b] autorelease];
+}
+
+-(id) initWithDuration: (ccTime) t red:(GLubyte)r green:(GLubyte)g blue:(GLubyte)b
+{
+	if( (self=[super initWithDuration: t] ) ) {
+		toR = r;
+		toG = g;
+		toB = b;
+	}
+	return self;
+}
+
+-(id) copyWithZone: (NSZone*) zone
+{
+	Action *copy = [(TintTo*)[[self class] allocWithZone: zone] initWithDuration: [self duration] red:toR green:toG blue:toB];
+	return copy;
+}
+
+-(void) start
+{
+	[super start];
+	
+	id<CocosNodeRGB> tn = (id<CocosNodeRGB>) target;
+	
+	fromR = [tn r];
+	fromG = [tn g];
+	fromB = [tn b];
+}
+
+-(void) update: (ccTime) t
+{
+	id<CocosNodeRGB> tn = (id<CocosNodeRGB>) target;
+	[tn setRGB:fromR + (toR - fromR) * t :fromG + (toG - fromG) * t :fromB + (toB - fromB) * t];
+}
+@end
+
+//
+// TintBy
+//
+#pragma mark TintBy
+@implementation TintBy
++(id) actionWithDuration:(ccTime)t red:(GLshort)r green:(GLshort)g blue:(GLshort)b
+{
+	return [[(TintBy*)[ self alloc] initWithDuration:t red:r green:g blue:b] autorelease];
+}
+
+-(id) initWithDuration:(ccTime)t red:(GLshort)r green:(GLshort)g blue:(GLshort)b
+{
+	if( (self=[super initWithDuration: t] ) ) {
+		deltaR = r;
+		deltaG = g;
+		deltaB = b;
+	}
+	return self;
+}
+
+-(id) copyWithZone: (NSZone*) zone
+{
+	return[(TintBy*)[[self class] allocWithZone: zone] initWithDuration: [self duration] red:deltaR green:deltaG blue:deltaB];
+}
+
+-(void) start
+{
+	[super start];
+	
+	id<CocosNodeRGB> tn = (id<CocosNodeRGB>) target;
+	fromR = [tn r];
+	fromG = [tn g];
+	fromB = [tn b];
+}
+
+-(void) update: (ccTime) t
+{
+	id<CocosNodeRGB> tn = (id<CocosNodeRGB>) target;
+	[tn setRGB:fromR + deltaR * t :fromG + deltaG * t :fromB + deltaB * t];
+}
+- (IntervalAction*) reverse
+{
+	return [TintBy actionWithDuration:duration red:-deltaR green:-deltaG blue:-deltaB];
+}
+@end
+
+//
 // Accelerate
 //
+#pragma mark Accelerate
 @implementation Accelerate
 @synthesize rate;
 + (id) actionWithAction: (IntervalAction*) action rate: (float) r
@@ -936,32 +1027,32 @@
 //
 @implementation Animate
 
-+(id) actionWithAnimation: (id<CocosAnimation>) a
++(id) actionWithAnimation: (id<CocosAnimation>)anim
 {
-	return [[[self alloc] initWithAnimation: a restoreOriginalFrame:YES] autorelease];
+	return [[[self alloc] initWithAnimation:anim restoreOriginalFrame:YES] autorelease];
 }
 
-+(id) actionWithAnimation: (id<CocosAnimation>) a restoreOriginalFrame:(BOOL)b
++(id) actionWithAnimation: (id<CocosAnimation>)anim restoreOriginalFrame:(BOOL)b
 {
-	return [[[self alloc] initWithAnimation: a restoreOriginalFrame:b] autorelease];
+	return [[[self alloc] initWithAnimation:anim restoreOriginalFrame:b] autorelease];
 }
 
--(id) initWithAnimation: (id<CocosAnimation>) a
+-(id) initWithAnimation: (id<CocosAnimation>)anim
 {
-	NSAssert( a!=nil, @"Animate: argument Animation must be non-nil");
-	return [self initWithAnimation:a restoreOriginalFrame:YES];
+	NSAssert( anim!=nil, @"Animate: argument Animation must be non-nil");
+	return [self initWithAnimation:anim restoreOriginalFrame:YES];
 }
 
--(id) initWithAnimation: (id<CocosAnimation>) a restoreOriginalFrame:(BOOL) b
+-(id) initWithAnimation: (id<CocosAnimation>)anim restoreOriginalFrame:(BOOL) b
 {
-	NSAssert( a!=nil, @"Animate: argument Animation must be non-nil");
+	NSAssert( anim!=nil, @"Animate: argument Animation must be non-nil");
 
-	if( !(self=[super initWithDuration: [[a frames] count] * [a delay]]) )
-		return nil;
+	if( (self=[super initWithDuration: [[anim frames] count] * [anim delay]]) ) {
 
-	restoreOriginalFrame = b;
-	animation = [(NSObject*)a retain];
-	origFrame = nil;
+		restoreOriginalFrame = b;
+		animation = [anim retain];
+		origFrame = nil;
+	}
 	return self;
 }
 
@@ -1015,4 +1106,3 @@
 	}
 }
 @end
-

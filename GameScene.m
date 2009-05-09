@@ -15,7 +15,7 @@
     self = [super init];
     if (self != nil) {
         Sprite * bg = [Sprite spriteWithFile:@"game.png"];
-        [bg setPosition:cpv(240, 160)];
+        [bg setPosition:ccp(240, 160)];
         [self addChild:bg z:0];
         [self addChild:[GameLayer node] z:1];
     }

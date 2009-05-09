@@ -14,14 +14,13 @@
 
 #import <UIKit/UIKit.h>
 
-#import "chipmunk.h"
 #import "CocosNode.h"
 #import "ccTypes.h"
 
 typedef struct sParticle
 {
-	cpVect	pos;
-	cpVect	dir;
+	CGPoint	pos;
+	CGPoint	dir;
 	float	radialAccel;
 	float	tangentialAccel;
 	ccColorF	color;
@@ -45,13 +44,13 @@ typedef struct sParticle
 	float elapsed;
 	
 	/// Gravity of the particles
-	cpVect gravity;
+	CGPoint gravity;
 
 	// position is from "superclass" CocosNode
 	// Emitter source position
-	cpVect source;
+	CGPoint source;
 	// Position variance
-	cpVect posVar;
+	CGPoint posVar;
 	
 	// The angle (direction) of the particles measured in degrees
 	float angle;
@@ -113,12 +112,12 @@ typedef struct sParticle
 	
 	// Array of (x,y,size) 
 	ccPointSprite *vertices;
-	// Array of colors
-	ccColorF	*colors;
+//	// Array of colors
+//	ccColorF	*colors;
 	// vertices buffer id
 	GLuint	verticesID;
-	// colors buffer id
-	GLuint	colorsID;
+//	// colors buffer id
+//	GLuint	colorsID;
 	
 	//  particle idx
 	int particleIdx;
@@ -129,13 +128,13 @@ typedef struct sParticle
 /** Quantity of particles that are being simulated at the moment */
 @property (readonly) int	particleCount;
 /** Gravity value */
-@property (readwrite,assign) cpVect gravity;
+@property (readwrite,assign) CGPoint gravity;
 /** How many seconds the emitter wil run. -1 means 'forever' */
 @property (readwrite,assign) float duration;
 /** Source location of particles respective to emitter location */
-@property (readwrite,assign) cpVect source;
+@property (readwrite,assign) CGPoint source;
 /** Position variance of the emitter */
-@property (readwrite,assign) cpVect posVar;
+@property (readwrite,assign) CGPoint posVar;
 /** life, and life variation of each particle */
 @property (readwrite,assign) float life;
 /** life variance of each particle */
@@ -172,6 +171,8 @@ typedef struct sParticle
 @property (readwrite,assign) float emissionRate;
 /** maximum particles of the system */
 @property (readwrite,assign) int totalParticles;
+/** texture used to render the particles */
+@property (readwrite, retain) Texture2D * texture;
 
 //! Initializes a system with a fixed number of particles
 -(id) initWithTotalParticles:(int) numberOfParticles;
@@ -179,12 +180,10 @@ typedef struct sParticle
 -(BOOL) addParticle;
 //! Initializes a particle
 -(void) initParticle: (Particle*) particle;
-//! draw all the particles
--(void) draw;
-//! stop the running system
+//! stop emitting particles. Running particles will continue to run until they die
 -(void) stopSystem;
-//! reset the system
+//! Kill all living particles.
 -(void) resetSystem;
-//! is the system full ?
+//! whether or not the system is full
 -(BOOL) isFull;
 @end

@@ -12,12 +12,10 @@
  *
  */
 
-#import "Texture2D.h"
 #import "TextureMgr.h"
+#import "Support/FileUtils.h"
+#import "Support/Texture2D.h"
 
-@interface TextureMgr (Private)
--(NSString*) fullPathFromRelativePath:(NSString*) relPath;
-@end
 
 @implementation TextureMgr
 //
@@ -52,10 +50,9 @@ static TextureMgr *sharedTextureMgr;
 
 -(id) init
 {
-	if( ! (self=[super init]) )
-		return nil;
-	
-	textures = [[NSMutableDictionary dictionaryWithCapacity: 10] retain];
+	if( (self=[super init]) )
+		textures = [[NSMutableDictionary dictionaryWithCapacity: 10] retain];
+
 	return self;
 }
 
@@ -78,7 +75,7 @@ static TextureMgr *sharedTextureMgr;
 	}
 		
 	// Split up directory and filename
-	NSString *fullpath = [self fullPathFromRelativePath:path];
+	NSString *fullpath = [FileUtils fullPathFromRelativePath: path ];
 
 	// all images are handled by UIImage except PVR extension that is handled by our own handler
 	if ( [[path lowercaseString] hasSuffix:@".pvr"] )
@@ -103,7 +100,7 @@ static TextureMgr *sharedTextureMgr;
 	}
 	
 	// Split up directory and filename
-	NSString *fullpath = [self fullPathFromRelativePath:path];
+	NSString *fullpath = [FileUtils fullPathFromRelativePath:path];
 	
 	NSData *nsdata = [[NSData alloc] initWithContentsOfFile:fullpath];
 	tex = [[Texture2D alloc] initWithPVRTCData:[nsdata bytes] level:0 bpp:bpp hasAlpha:alpha length:w];
@@ -155,23 +152,12 @@ static TextureMgr *sharedTextureMgr;
 
 -(void) removeTexture: (Texture2D*) tex
 {
-	NSAssert(tex != nil, @"TextureMgr: tex MUST not be nill");
+	if( ! tex )
+		return;
 	
 	NSArray *keys = [textures allKeysForObject:tex];
 	
 	for( NSUInteger i = 0; i < [keys count]; i++ )
 		[textures removeObjectForKey:[keys objectAtIndex:i]];
-}
-
-// private stuff
--(NSString*) fullPathFromRelativePath:(NSString*) relPath
-{
-	NSMutableArray *imagePathComponents = [NSMutableArray arrayWithArray:[relPath pathComponents]];
-	NSString *file = [imagePathComponents lastObject];
-	
-	[imagePathComponents removeLastObject];
-	NSString *imageDirectory = [NSString pathWithComponents:imagePathComponents];
-	
-	return [[NSBundle mainBundle] pathForResource:file ofType:nil inDirectory:imageDirectory];	
 }
 @end

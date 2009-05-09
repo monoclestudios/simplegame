@@ -13,14 +13,8 @@
  */
 
 
-#import <QuartzCore/QuartzCore.h>
-#import <OpenGLES/EAGLDrawable.h>
-#import <UIKit/UIKit.h>
-#import <OpenGLES/EAGL.h>
-#import <OpenGLES/ES1/gl.h>
-#import <OpenGLES/ES1/glext.h>
-
 #import "Label.h"
+#import "Support/CGPointExtension.h"
 
 @implementation Label
 
@@ -73,21 +67,23 @@
 
 - (void) setString:(NSString*)string
 {
-	if (texture)
-		[texture release];
-
 	if( CGSizeEqualToSize( _dimensions, CGSizeZero ) )
-		texture = [[Texture2D alloc] initWithString:string fontName:_fontName fontSize:_fontSize];
+		// WARNING: double retain
+		self.texture = [[Texture2D alloc] initWithString:string fontName:_fontName fontSize:_fontSize];
 	else
-		texture = [[Texture2D alloc] initWithString:string dimensions:_dimensions alignment:_alignment fontName:_fontName fontSize:_fontSize];
+		// WARNING: double retain
+		self.texture = [[Texture2D alloc] initWithString:string dimensions:_dimensions alignment:_alignment fontName:_fontName fontSize:_fontSize];
+	
+	// end of warning. 1 retain only
+	[self.texture release];
+
 	CGSize s = texture.contentSize;
-	transformAnchor = cpv( s.width/2, s.height/2);
+	transformAnchor = ccp( s.width/2, s.height/2);
 }
 
 - (void) dealloc
 {
 	[_fontName release];
-	[texture release];
 	[super dealloc];
 }
 @end

@@ -12,11 +12,13 @@
  *
  */
 
-#import <UIKit/UIKit.h>
+#import <Foundation/Foundation.h>
 
-static NSString *version = @"cocos2d v0.7.2";
 
-NSString *cocos2dVersion()
+/** Helper class to handle file operations */
+@interface FileUtils : NSObject
 {
-	return version;
 }
+/** converts a relative path to a full path */
++(NSString*) fullPathFromRelativePath:(NSString*) relPath;
+@end

@@ -31,7 +31,6 @@
  *
  *	- Limitations
  *		- Their parent can only be an AtlasSpriteManager
- *		- They all use z-order 0
  *		- They can't have children
  *		- Camera is not supported yet (eg: OrbitCamera action doesn't work)
  *		- GridBase actions are supported (eg: Lens, Ripple, Twirl)
@@ -43,30 +42,33 @@
 @interface AtlasSprite : CocosNode <CocosNodeSize, CocosNodeFrames, CocosNodeOpacity, CocosNodeRGB>
 {
 	// weak reference
-	TextureAtlas *mAtlas;
-	int mAtlasIndex;
+	TextureAtlas *textureAtlas_;
+	NSUInteger atlasIndex_;
 
 	// texture pixels
-	CGRect mRect;
+	CGRect rect_;
 
 	// texture coords
 	// stored as floats in the range [0..1]
-	ccQuad2 mTexCoords;
+	ccQuad2 texCoords_;
 
-	// screen pixels
+	// vertex coordinates
 	// stored as pixel locations
-	ccQuad3 mVertices;
+	ccQuad3 vertexCoords_;
 	
 	// whether or not this Sprite needs to be updated in the Atlas
 	BOOL	dirtyPosition;
 	
 	// opacity and RGB protocol
-	GLubyte _opacity;
-	GLubyte _r, _g, _b;
+	GLubyte opacity_;
+	GLubyte r_, g_, b_;
 	BOOL	dirtyColor;
 	
 	// Animations that belong to the sprite
 	NSMutableDictionary *animations;
+	
+	// cocosNodeProtcol
+	BOOL	autoCenterFrames_;
 }
 
 /** whether or not the Sprite needs to be updated in the Atlas */
@@ -74,9 +76,11 @@
 /** whether or not the Sprite's color needs to be updated in the Atlas */
 @property (readonly) BOOL dirtyColor;
 /** returns the altas index of the AtlasSprite */
-@property (readonly) int atlasIndex;
+@property (readonly) NSUInteger atlasIndex;
 /** returns the rect of the AtlasSprite */
 @property (readonly) CGRect textureRect;
+/** whether or not the new frames will be auto centered */
+@property (readwrite) BOOL autoCenterFrames;
 
 /** creates an AtlasSprite with an AtlasSpriteManager inidicating the Rect of the Atlas */
 +(id)spriteWithRect:(CGRect)rect spriteManager:(AtlasSpriteManager*)manager;
@@ -86,6 +90,7 @@
 /** updates the Quad in the TextureAtlas with it's new position, scale and rotation */
 -(void)updateAtlas;
 
+-(void)insertInAtlasAtIndex:(NSUInteger)index;
 -(void)updatePosition;
 -(void)updateColor;
 

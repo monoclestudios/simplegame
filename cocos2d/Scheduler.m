@@ -13,9 +13,8 @@
  */
 
 // cocos2d imports
-#import "ccMacros.h"
 #import "Scheduler.h"
-
+#import "ccMacros.h"
 
 //
 // Timer
@@ -52,19 +51,16 @@
 -(id) initWithTarget:(id) t selector:(SEL)s interval:(ccTime) seconds
 {
 	if( (self=[super init]) ) {
-	
-		interval = seconds;
-		elapsed = 0;
-
-		NSMethodSignature * sig = [[t class] instanceMethodSignatureForSelector:s];
+#ifdef DEBUG
+		NSMethodSignature *sig = [t methodSignatureForSelector:s];
 		NSAssert(sig !=0 , @"Signature not found for selector - does it have the following form? -(void) name: (ccTime) dt");
+#endif
 		
-		invocation = [NSInvocation invocationWithMethodSignature:sig];
-		[invocation setTarget:t];
-		[invocation setSelector:s];
-		[invocation retainArguments];
+		target = [t retain];
+		selector = s;
+		impMethod = (TICK_IMP) [t methodForSelector:s];
 		
-		[invocation retain];
+		interval = seconds;
 	}
 	return self;
 }
@@ -72,7 +68,8 @@
 -(void) dealloc
 {
 	CCLOG( @"deallocing %@", self);
-	[invocation release];
+	
+	[target release];
 	[super dealloc];
 }
 
@@ -80,9 +77,7 @@
 {
 	elapsed += dt;
 	if( elapsed >= interval ) {
-		[invocation setArgument:&elapsed atIndex:2];
-		[invocation invoke];
-		
+		impMethod(target, selector, elapsed);
 		elapsed = 0;
 	}
 }
@@ -214,7 +209,6 @@ static Scheduler *sharedScheduler;
 	for( id k in methodsToAdd )
 		[scheduledMethods addObject:k];
 	[methodsToAdd removeAllObjects];
-	
 	
 	for( Timer *t in scheduledMethods )
 		[t fire: dt];

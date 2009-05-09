@@ -27,8 +27,8 @@
  */
 
 // 0x00 HI ME LO
-// 00   00 07 01
-#define COCOS2D_VERSION 0x00000701
+// 00   00 07 02
+#define COCOS2D_VERSION 0x00000702
 
 //
 // all cocos2d include files
@@ -37,7 +37,6 @@
 #import "Camera.h"
 #import "CameraAction.h"
 #import "CocosNode.h"
-#import "CocosNodeExtras.h"
 #import "Director.h"
 #import "InstantAction.h"
 #import "IntervalAction.h"
@@ -80,6 +79,8 @@
 #import "Support/OpenGL_Internal.h"
 #import "Support/Texture2D.h"
 #import "Support/EAGLView.h"
+#import "Support/FileUtils.h"
+#import "Support/CGPointExtension.h"
 
 
 // free functions

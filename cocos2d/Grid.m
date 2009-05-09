@@ -19,6 +19,7 @@
 #import "Grabber.h"
 
 #import "Support/glu.h"
+#import "Support/CGPointExtension.h"
 
 @implementation GridBase
 
@@ -214,7 +215,7 @@
 	
 	vertices = malloc((gridSize.x+1)*(gridSize.y+1)*sizeof(ccVertex3D));
 	originalVertices = malloc((gridSize.x+1)*(gridSize.y+1)*sizeof(ccVertex3D));
-	texCoordinates = malloc((gridSize.x+1)*(gridSize.y+1)*sizeof(cpVect));
+	texCoordinates = malloc((gridSize.x+1)*(gridSize.y+1)*sizeof(CGPoint));
 	indices = malloc(gridSize.x*gridSize.y*sizeof(GLushort)*6);
 	
 	float *vertArray = (float*)vertices;
@@ -264,7 +265,7 @@
 			ccVertex3D l2[4] = { e, f, g, h };
 			
 			int tex1[4] = { a*2, b*2, c*2, d*2 };
-			cpVect tex2[4] = { cpv(x1,y1), cpv(x2,y1), cpv(x2,y2), cpv(x1,y2) };
+			CGPoint tex2[4] = { ccp(x1,y1), ccp(x2,y1), ccp(x2,y2), ccp(x1,y2) };
 			
 			for( i = 0; i < 4; i++ )
 			{

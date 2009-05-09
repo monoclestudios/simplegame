@@ -15,11 +15,12 @@
 #import "TiledGridAction.h"
 #import "Director.h"
 #import "ccMacros.h"
+#import "Support/CGPointExtension.h"
 
 typedef struct
 {
-	cpVect	position;
-	cpVect	startPosition;
+	CGPoint	position;
+	CGPoint	startPosition;
 	ccGridSize	delta;
 } Tile;
 
@@ -182,7 +183,7 @@ typedef struct
 
 -(ccGridSize)getDelta:(ccGridSize)pos
 {
-	cpVect	pos2;
+	CGPoint	pos2;
 	
 	int idx = pos.x * gridSize.y + pos.y;
 	
@@ -234,8 +235,8 @@ typedef struct
 	{
 		for( j = 0; j < gridSize.y; j++ )
 		{
-			tileArray->position = cpv(i,j);
-			tileArray->startPosition = cpv(i,j);
+			tileArray->position = ccp(i,j);
+			tileArray->startPosition = ccp(i,j);
 			tileArray->delta = [self getDelta:ccg(i,j)];
 			tileArray++;
 		}
@@ -252,7 +253,7 @@ typedef struct
 	{
 		for( j = 0; j < gridSize.y; j++ )
 		{
-			tileArray->position = cpvmult( cpv(tileArray->delta.x, tileArray->delta.y), time);
+			tileArray->position = ccpMult( ccp(tileArray->delta.x, tileArray->delta.y), time);
 			[self placeTile:ccg(i,j) tile:*tileArray];
 			tileArray++;
 		}
@@ -267,7 +268,7 @@ typedef struct
 
 -(float)testFunc:(ccGridSize)pos time:(ccTime)time
 {
-	cpVect	n = cpvmult( cpv(gridSize.x,gridSize.y), time);
+	CGPoint	n = ccpMult( ccp(gridSize.x,gridSize.y), time);
 	if ( (n.x+n.y) == 0.0f )
 		return 1.0f;
 	return powf( (pos.x+pos.y) / (n.x+n.y), 6 );
@@ -331,7 +332,7 @@ typedef struct
 
 -(float)testFunc:(ccGridSize)pos time:(ccTime)time
 {
-	cpVect	n = cpvmult(cpv(gridSize.x, gridSize.y), (1.0f-time));
+	CGPoint	n = ccpMult(ccp(gridSize.x, gridSize.y), (1.0f-time));
 	
 	if ( (pos.x+pos.y) == 0 )
 		return 1.0f;
@@ -346,7 +347,7 @@ typedef struct
 
 -(float)testFunc:(ccGridSize)pos time:(ccTime)time
 {
-	cpVect	n = cpvmult(cpv(gridSize.x, gridSize.y), time);
+	CGPoint	n = ccpMult(ccp(gridSize.x, gridSize.y), time);
 	if ( n.y == 0 )
 		return 1.0f;
 	return powf( pos.y / n.y, 6 );
@@ -372,7 +373,7 @@ typedef struct
 
 -(float)testFunc:(ccGridSize)pos time:(ccTime)time
 {
-	cpVect	n = cpvmult(cpv(gridSize.x,gridSize.y), (1.0f - time));
+	CGPoint	n = ccpMult(ccp(gridSize.x,gridSize.y), (1.0f - time));
 	if ( pos.y == 0 )
 		return 1.0f;
 	return powf( n.y / pos.y, 6 );
@@ -503,7 +504,7 @@ typedef struct
 		{
 			ccQuad3 coords = [self originalTile:ccg(i,j)];
 			
-			coords.bl_z = (sinf(time*(cpFloat)M_PI*waves*2 + (coords.bl_y+coords.bl_x) * .01f) * amplitude * amplitudeRate );
+			coords.bl_z = (sinf(time*(CGFloat)M_PI*waves*2 + (coords.bl_y+coords.bl_x) * .01f) * amplitude * amplitudeRate );
 			coords.br_z	= coords.bl_z;
 			coords.tl_z = coords.bl_z;
 			coords.tr_z = coords.bl_z;
@@ -542,8 +543,8 @@ typedef struct
 {
 	int i, j;
 	
-	float sinz =  (sinf((cpFloat)M_PI*time*jumps*2) * amplitude * amplitudeRate );
-	float sinz2 = (sinf((cpFloat)M_PI*(time*jumps*2 + 1)) * amplitude * amplitudeRate );
+	float sinz =  (sinf((CGFloat)M_PI*time*jumps*2) * amplitude * amplitudeRate );
+	float sinz2 = (sinf((CGFloat)M_PI*(time*jumps*2 + 1)) * amplitude * amplitudeRate );
 	
 	for( i = 0; i < gridSize.x; i++ )
 	{

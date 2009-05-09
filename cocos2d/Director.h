@@ -53,15 +53,15 @@ and when to execute the Scenes
 */
 @interface Director : NSObject <EAGLTouchDelegate>
 {
-	EAGLView	*_openGLView;
+	EAGLView	*openGLView_;
 
 	// internal timer
 	NSTimer *animationTimer;
 	NSTimeInterval animationInterval;
 	NSTimeInterval oldAnimationInterval;
 
-	tPixelFormat _pixelFormat;
-	tDepthBufferFormat _depthBufferFormat;
+	tPixelFormat pixelFormat_;
+	tDepthBufferFormat depthBufferFormat_;
 
 	/* landscape mode ? */
 	BOOL landscape;
@@ -78,31 +78,32 @@ and when to execute the Scenes
 	/* is the running scene paused */
 	BOOL paused;
 	
-	/* running scene */
-	Scene *runningScene;
+	/* The running scene */
+	Scene *runningScene_;
 	
-	/* will be the next 'runningScene' in the next frame */
+	/* will be the next 'runningScene' in the next frame
+	 nextScene is a weak reference. */
 	Scene *nextScene;
 	
 	/* event handler */
 	NSMutableArray	*eventHandlers;
 
 	/* scheduled scenes */
-	NSMutableArray *scenes;
+	NSMutableArray *scenesStack_;
 	
 	/* last time the main loop was updated */
 	struct timeval lastUpdate;
 	/* delta time since last tick to main loop */
 	ccTime dt;
 	/* whether or not the next delta time will be zero */
-	BOOL _nextDeltaTimeZero;
+	BOOL nextDeltaTimeZero_;
 	
 	/* are touch events enabled. Default is YES */
 	BOOL eventsEnabled;
 }
 
 /** The current running Scene. Director can only run one Scene at the time */
-@property (readonly, assign) Scene* runningScene;
+@property (readonly) Scene* runningScene;
 /** The FPS value */
 @property (readwrite, assign) NSTimeInterval animationInterval;
 /** Whether or not to display the FPS on the bottom-left corner */
@@ -129,13 +130,13 @@ and when to execute the Scenes
 
 /** change default pixel format.
  Call this class method before attaching it to a UIWindow/UIView
- Default pixel format: RGB565. Supported pixel formats: RGBA8 and RGB565
+ Default pixel format: kRGB565. Supported pixel formats: kRGBA8 and kRGB565
  */
 -(void) setPixelFormat: (tPixelFormat) p;
 
 /** change depth buffer format.
  Call this class method before attaching it to a UIWindow/UIView
- Default depth buffer: 0 (none).  Supported: DepthBufferNone, DepthBuffer16, and DepthBuffer24
+ Default depth buffer: 0 (none).  Supported: kDepthBufferNone, kDepthBuffer16, and kDepthBuffer24
  */
 -(void) setDepthBufferFormat: (tDepthBufferFormat) db;
 

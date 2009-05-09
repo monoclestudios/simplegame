@@ -15,7 +15,11 @@
 
 #import "Menu.h"
 #import "Director.h"
-#import "CocosNodeExtras.h"
+#import "Support/CGPointExtension.h"
+
+enum {
+	kDefaultPadding =  5,
+};
 
 @interface Menu (Private)
 // returns touched menu item, if any
@@ -61,19 +65,21 @@
 		s.height -= r.size.width;
 	else
 	    s.height -= r.size.height;
-	position = cpv(s.width/2, s.height/2);
+	position = ccp(s.width/2, s.height/2);
 
 	isTouchEnabled = YES;
 	selectedItem = -1;
 	
 	int z=0;
 	
-	[self addChild: item z:z];
-	MenuItem *i = va_arg(args, MenuItem*);
-	while(i) {
-		z++;
-		[self addChild: i z:z];
-		i = va_arg(args, MenuItem*);
+	if (item) {
+		[self addChild: item z:z];
+		MenuItem *i = va_arg(args, MenuItem*);
+		while(i) {
+			z++;
+			[self addChild: i z:z];
+			i = va_arg(args, MenuItem*);
+		}
 	}
 //	[self alignItemsVertically];
 	
@@ -93,7 +99,6 @@
 	NSAssert( [child isKindOfClass:[MenuItem class]], @"Menu only supports MenuItem objects as children");
 	return [super addChild:child z:z tag:aTag];
 }
-
 
 #pragma mark Menu - Events
 
@@ -164,28 +169,37 @@
 #pragma mark Menu - Alignment
 -(void) alignItemsVertically
 {
-	int height = -5;
+	return [self alignItemsVerticallyWithPadding:kDefaultPadding];
+}
+-(void) alignItemsVerticallyWithPadding:(float)padding
+{
+	float height = -padding;
 	for(MenuItem *item in children)
-	    height += [item contentSize].height + 5;
+	    height += [item contentSize].height * item.scaleY + padding;
 
-	float y = height / 2;
+	float y = height / 2.0f;
 	for(MenuItem *item in children) {
-	    [item setPosition:cpv(0, y - [item contentSize].height / 2)];
-	    y -= [item contentSize].height + 5;
+	    [item setPosition:ccp(0, y - [item contentSize].height * item.scaleY / 2.0f)];
+	    y -= [item contentSize].height * item.scaleY + padding;
 	}
 }
 
 -(void) alignItemsHorizontally
 {
-	
-	int width = -5;
-	for(MenuItem* item in children)
-	    width += [item contentSize].width + 5;
+	return [self alignItemsHorizontallyWithPadding:kDefaultPadding];
+}
 
-	int x = -width / 2;
+-(void) alignItemsHorizontallyWithPadding:(float)padding
+{
+	
+	float width = -padding;
+	for(MenuItem* item in children)
+	    width += [item contentSize].width * item.scaleX + padding;
+
+	float x = -width / 2.0f;
 	for(MenuItem* item in children) {
-		[item setPosition:cpv(x + [item contentSize].width / 2, 0)];
-		x += [item contentSize].width + 5;
+		[item setPosition:ccp(x + [item contentSize].width * item.scaleX / 2.0f, 0)];
+		x += [item contentSize].width * item.scaleX + padding;
 	}
 }
 
@@ -211,16 +225,10 @@
 	int height = -5;
     NSUInteger row = 0, rowHeight = 0, columnsOccupied = 0, rowColumns;
 	for(MenuItem *item in children) {
-        if(row >= [rows count])
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                           reason:@"Too many menu items for the amount of rows/columns."
-                                         userInfo:nil];
+		NSAssert( row < [rows count], @"Too many menu items for the amount of rows/columns.");
         
         rowColumns = [(NSNumber *) [rows objectAtIndex:row] unsignedIntegerValue];
-        if(rowColumns == 0)
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                           reason:[NSString stringWithFormat:@"Can't have zero columns on a row (row %d).", row]
-                                         userInfo:nil];
+		NSAssert( rowColumns, @"Can't have zero columns on a row");
         
         rowHeight = fmaxf(rowHeight, [item contentSize].height);
         ++columnsOccupied;
@@ -233,10 +241,7 @@
             ++row;
         }
     }
-    if(columnsOccupied != 0)
-        @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                       reason:@"Too many rows/columns for available menu items."
-                                     userInfo:nil];
+	NSAssert( !columnsOccupied, @"Too many rows/columns for available menu items." );
 
     CGSize winSize = [[Director sharedDirector] winSize];
     
@@ -250,7 +255,7 @@
         }
 
         rowHeight = fmaxf(rowHeight, [item contentSize].height);
-        [item setPosition:cpv(x - winSize.width / 2,
+        [item setPosition:ccp(x - winSize.width / 2,
                               y - [item contentSize].height / 2)];
             
         x += w + 10;
@@ -294,16 +299,10 @@
 	int width = -10, columnHeight = -5;
     NSUInteger column = 0, columnWidth = 0, rowsOccupied = 0, columnRows;
 	for(MenuItem *item in children) {
-        if(column >= [columns count])
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                           reason:@"Too many menu items for the amount of rows/columns."
-                                         userInfo:nil];
+		NSAssert( column < [columns count], @"Too many menu items for the amount of rows/columns.");
         
         columnRows = [(NSNumber *) [columns objectAtIndex:column] unsignedIntegerValue];
-        if(columnRows == 0)
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                           reason:[NSString stringWithFormat:@"Can't have zero rows on a column (column %d).", column]
-                                         userInfo:nil];
+		NSAssert( columnRows, @"Can't have zero rows on a column");
         
         columnWidth = fmaxf(columnWidth, [item contentSize].width);
         columnHeight += [item contentSize].height + 5;
@@ -320,10 +319,7 @@
             ++column;
         }
     }
-    if(rowsOccupied != 0)
-        @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                       reason:@"Too many rows/columns for available menu items."
-                                     userInfo:nil];
+	NSAssert( !rowsOccupied, @"Too many rows/columns for available menu items.");
     
     CGSize winSize = [[Director sharedDirector] winSize];
     
@@ -336,7 +332,7 @@
         }
         
         columnWidth = fmaxf(columnWidth, [item contentSize].width);
-        [item setPosition:cpv(x + [(NSNumber *) [columnWidths objectAtIndex:column] unsignedIntegerValue] / 2,
+        [item setPosition:ccp(x + [(NSNumber *) [columnWidths objectAtIndex:column] unsignedIntegerValue] / 2,
                               y - winSize.height / 2)];
         
         y -= [item contentSize].height + 10;

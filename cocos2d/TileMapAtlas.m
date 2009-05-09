@@ -14,6 +14,7 @@
 
 #import "TileMapAtlas.h"
 #import "ccMacros.h"
+#import "Support/FileUtils.h"
 
 @interface TileMapAtlas (Private)
 -(void) loadTGAfile:(NSString*)file;
@@ -91,10 +92,12 @@
 {
 	NSAssert( file != nil, @"file must be non-nil");
 
-	//Find the path of the file
-	NSBundle *mainBndl = [NSBundle mainBundle];
-	NSString *resourcePath = [mainBndl resourcePath];
-	NSString * path = [resourcePath stringByAppendingPathComponent:file];
+	NSString *path = [FileUtils fullPathFromRelativePath:file ];
+
+//	//Find the path of the file
+//	NSBundle *mainBndl = [NSBundle mainBundle];
+//	NSString *resourcePath = [mainBndl resourcePath];
+//	NSString * path = [resourcePath stringByAppendingPathComponent:file];
 	
 	tgaInfo = tgaLoad( [path UTF8String] );
 #if 1
@@ -168,18 +171,18 @@
 	//						  texCoord.tr_x,
 	//						  texCoord.tr_y );
 	
-	vertex.bl_x = x * itemWidth;					// A - x
-	vertex.bl_y = y * itemHeight;					// A - y
-	vertex.bl_z = 0.0f;								// A - z
-	vertex.br_x = x * itemWidth + itemWidth;		// B - x
-	vertex.br_y = y * itemHeight;					// B - y
-	vertex.br_z = 0.0f;								// B - z
-	vertex.tl_x = x * itemWidth;					// C - x
-	vertex.tl_y = y * itemHeight + itemHeight;		// C - y
-	vertex.tl_z = 0.0f;								// C - z
-	vertex.tr_x = x * itemWidth + itemWidth;		// D - x
-	vertex.tr_y = y * itemHeight + itemHeight;		// D - y
-	vertex.tr_z = 0.0f;								// D - z
+	vertex.bl_x = (int) (x * itemWidth);				// A - x
+	vertex.bl_y = (int) (y * itemHeight);				// A - y
+	vertex.bl_z = 0.0f;									// A - z
+	vertex.br_x = (int)(x * itemWidth + itemWidth);		// B - x
+	vertex.br_y = (int)(y * itemHeight);				// B - y
+	vertex.br_z = 0.0f;									// B - z
+	vertex.tl_x = (int)(x * itemWidth);					// C - x
+	vertex.tl_y = (int)(y * itemHeight + itemHeight);	// C - y
+	vertex.tl_z = 0.0f;									// C - z
+	vertex.tr_x = (int)(x * itemWidth + itemWidth);		// D - x
+	vertex.tr_y = (int)(y * itemHeight + itemHeight);	// D - y
+	vertex.tr_z = 0.0f;									// D - z
 	
 	[textureAtlas updateQuadWithTexture:&texCoord vertexQuad:&vertex atIndex:idx];
 }

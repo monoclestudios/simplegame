@@ -84,8 +84,7 @@
 	size = 8.0f;
 	sizeVar = 2.0f;
 
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 
 	// additive
 	blendAdditive = NO;
@@ -162,8 +161,7 @@
 	endColorVar.b = 0.0f;
 	endColorVar.a = 0.0f;
 	
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 	
 	// additive
 	blendAdditive = YES;
@@ -243,8 +241,7 @@
 	endColorVar.b = 0.0f;
 	endColorVar.a = 0.0f;
 	
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 	
 	return self;
 }
@@ -322,8 +319,7 @@
 	endColorVar.b = 0.0f;
 	endColorVar.a = 0.0f;
 	
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 
 	// additive
 	blendAdditive = YES;
@@ -404,8 +400,7 @@
 	endColorVar.b = 0.0f;
 	endColorVar.a = 0.0f;
 	
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 
 	// additive
 	blendAdditive = YES;
@@ -486,8 +481,7 @@
 	endColorVar.b = 0.0f;
 	endColorVar.a = 0.0f;
 	
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 	
 	// additive
 	blendAdditive = YES;
@@ -568,8 +562,7 @@
 	endColorVar.b = 0.5f;
 	endColorVar.a = 0.0f;
 	
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 
 	// additive
 	blendAdditive = NO;
@@ -650,8 +643,7 @@
 	endColorVar.b = 0.5f;
 	endColorVar.a = 0.0f;
 	
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 
 	// additive
 	blendAdditive = NO;
@@ -728,8 +720,7 @@
 	endColorVar.b = 0.0f;
 	endColorVar.a = 0.0f;
 	
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 	
 	// additive
 	blendAdditive = NO;
@@ -807,8 +798,7 @@
 	endColorVar.b = 0.0f;
 	endColorVar.a = 0.0f;
 	
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 	
 	// additive
 	blendAdditive = NO;
@@ -886,8 +876,7 @@
 	endColorVar.b = 0.0f;
 	endColorVar.a = 0.0f;
 	
-	texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
-	[texture retain];
+	self.texture = [[TextureMgr sharedTextureMgr] addImage: @"fire.png"];
 	
 	// additive
 	blendAdditive = NO;

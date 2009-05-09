@@ -30,7 +30,8 @@
 #import "ccMacros.h"
 
 // support
-#import "OpenGL_Internal.h"
+#import "Support/OpenGL_Internal.h"
+#import "Support/CGPointExtension.h"
 
 @implementation ParticleSystem
 @synthesize active, duration;
@@ -47,6 +48,7 @@
 @synthesize totalParticles;
 @synthesize size, sizeVar;
 @synthesize gravity;
+@synthesize texture;
 
 -(id) init {
 	NSException* myException = [NSException
@@ -58,42 +60,38 @@
 
 -(id) initWithTotalParticles:(int) numberOfParticles
 {
-	if( !(self=[super init]) )
-		return nil;
+	if( (self=[super init]) ) {
 
-	totalParticles = numberOfParticles;
-	
-	particles = malloc( sizeof(Particle) * totalParticles );
-	vertices = malloc( sizeof(ccPointSprite) * totalParticles );
-	colors = malloc (sizeof(ccColorF) * totalParticles);
-
-	if( ! ( particles &&vertices && colors ) ) {
-		NSLog(@"Particle system: not enough memory");
-		if( particles )
-			free(particles);
-		if( vertices )
-			free(vertices);
-		if( colors )
-			free(colors);
-		return nil;
-	}
-	
-	bzero( particles, sizeof(Particle) * totalParticles );
-	
-	// default, active
-	active = YES;
-	
-	// default: additive
-	blendAdditive = NO;
-	
-	// default: modulate
-	// XXX: not used
-//	colorModulate = YES;
+		totalParticles = numberOfParticles;
 		
-	glGenBuffers(1, &verticesID);
-	glGenBuffers(1, &colorsID);	
+		particles = malloc( sizeof(Particle) * totalParticles );
+		vertices = malloc( sizeof(ccPointSprite) * totalParticles );
 
-	[self schedule:@selector(step:)];
+		if( ! ( particles &&vertices ) ) {
+			NSLog(@"Particle system: not enough memory");
+			if( particles )
+				free(particles);
+			if( vertices )
+				free(vertices);
+			return nil;
+		}
+		
+		bzero( particles, sizeof(Particle) * totalParticles );
+		
+		// default, active
+		active = YES;
+		
+		// default: additive
+		blendAdditive = NO;
+		
+		// default: modulate
+		// XXX: not used
+	//	colorModulate = YES;
+			
+		glGenBuffers(1, &verticesID);
+
+		[self schedule:@selector(step:)];
+	}
 
 	return self;
 }
@@ -102,9 +100,7 @@
 {
 	free( particles );
 	free(vertices);
-	free(colors);
 	glDeleteBuffers(1, &verticesID);
-	glDeleteBuffers(1, &colorsID);
 
 	[texture release];
 	
@@ -126,18 +122,18 @@
 
 -(void) initParticle: (Particle*) particle
 {
-	cpVect v;
+	CGPoint v;
 
 	// position
-	particle->pos.x = source.x + posVar.x * CCRANDOM_MINUS1_1();
-	particle->pos.y = source.y + posVar.y * CCRANDOM_MINUS1_1();
+	particle->pos.x = (int) (source.x + posVar.x * CCRANDOM_MINUS1_1());
+	particle->pos.y = (int) (source.y + posVar.y * CCRANDOM_MINUS1_1());
 	
 	// direction
-	float a = (cpFloat)CC_DEGREES_TO_RADIANS( angle + angleVar * CCRANDOM_MINUS1_1() );
+	float a = (CGFloat)CC_DEGREES_TO_RADIANS( angle + angleVar * CCRANDOM_MINUS1_1() );
 	v.y = sinf( a );
 	v.x = cosf( a );
 	float s = speed + speedVar * CCRANDOM_MINUS1_1();
-	particle->dir = cpvmult( v, s );
+	particle->dir = ccpMult( v, s );
 	
 	// radial accel
 	particle->radialAccel = radialAccel + radialAccelVar * CCRANDOM_MINUS1_1();
@@ -194,27 +190,27 @@
 
 		if( p->life > 0 ) {
 
-			cpVect tmp, radial, tangential;
+			CGPoint tmp, radial, tangential;
 
-			radial = cpvzero;
+			radial = CGPointZero;
 			// radial acceleration
 			if(p->pos.x || p->pos.y)
-				radial = cpvnormalize(p->pos);
+				radial = ccpNormalize(p->pos);
 			tangential = radial;
-			radial = cpvmult(radial, p->radialAccel);
+			radial = ccpMult(radial, p->radialAccel);
 
 			// tangential acceleration
 			float newy = tangential.x;
 			tangential.x = -tangential.y;
 			tangential.y = newy;
-			tangential = cpvmult(tangential, p->tangentialAccel);
+			tangential = ccpMult(tangential, p->tangentialAccel);
 
 			// (gravity + radial + tangential) * dt
-			tmp = cpvadd( cpvadd( radial, tangential), gravity);
-			tmp = cpvmult( tmp, dt);
-			p->dir = cpvadd( p->dir, tmp);
-			tmp = cpvmult(p->dir, dt);
-			p->pos = cpvadd( p->pos, tmp );
+			tmp = ccpAdd( ccpAdd( radial, tangential), gravity);
+			tmp = ccpMult( tmp, dt);
+			p->dir = ccpAdd( p->dir, tmp);
+			tmp = ccpMult(p->dir, dt);
+			p->pos = ccpAdd( p->pos, tmp );
 
 			p->color.r += (p->deltaColor.r * dt);
 			p->color.g += (p->deltaColor.g * dt);
@@ -227,9 +223,7 @@
 			vertices[particleIdx].x = p->pos.x;
 			vertices[particleIdx].y = p->pos.y;
 			vertices[particleIdx].size = p->size;
-
-			// colors
-			colors[particleIdx] = p->color;
+			vertices[particleIdx].colors = p->color;
 
 			// update particle counter
 			particleIdx++;
@@ -244,8 +238,6 @@
 
 	glBindBuffer(GL_ARRAY_BUFFER, verticesID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(ccPointSprite)*totalParticles, vertices,GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, colorsID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(ccColorF)*totalParticles, colors,GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -258,8 +250,12 @@
 
 -(void) resetSystem
 {
-	elapsed = duration;
-	emitCounter = 0;
+	active = YES;
+	elapsed = 0;
+	for(particleIdx = 0; particleIdx < particleCount; ++particleIdx) {
+		Particle *p = &particles[particleIdx];
+		p->life = 0;
+	}
 }
 
 -(void) draw
@@ -281,8 +277,7 @@
 	glPointSizePointerOES(GL_FLOAT,sizeof(ccPointSprite),(GLvoid*) (sizeof(GL_FLOAT)*2));
 	
 	glEnableClientState(GL_COLOR_ARRAY);
-	glBindBuffer(GL_ARRAY_BUFFER, colorsID);
-	glColorPointer(4,GL_FLOAT,0,0);
+	glColorPointer(4, GL_FLOAT, sizeof(ccPointSprite),(GLvoid*) (sizeof(GL_FLOAT)*3));
 
 	// save blend state
 //	glGetIntegerv(GL_BLEND_DST, &blendDst);
